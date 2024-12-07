@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { SafeAreaView, Button, Text, View, StyleSheet, Dimensions, FlatList, Switch, TouchableOpacity } from "react-native";
+import { SafeAreaView, Button, Text, View, StyleSheet, Dimensions, FlatList, Switch, TouchableOpacity, ScrollView } from "react-native";
 import { WebView } from "react-native-webview";
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,13 +20,44 @@ export default function App() {
 	const [dayCooldown, setDayCooldown] = useState("15 minutes");
 	const [nightCooldown, setNightCooldown] = useState("1 hour");
 	const [isBackgroundTaskEnabled, setIsBackgroundTaskEnabled] = useState(false);
-	const [notification, setNotification] = useState(null);
 	const [isWebViewVisible, setIsWebViewVisible] = useState(false);
 	const webviewRef = useRef(null);
 
 	const LAST_DATA_KEY = "@lastData";
 
-	/* const handleToggle = async () => {
+	const BACKGROUND_TASK_NAME = "handleSubmitForm";
+
+	TaskManager.defineTask(BACKGROUND_TASK_NAME, () => {
+		try {
+			console.log("Background task running");
+			handleSubmitForm();
+			return BackgroundFetch.Result.NewData;
+		} catch (error) {
+			console.error("Error in background task:", error);
+			return BackgroundFetch.Result.Failed;
+		}
+	});
+
+	const registerBackgroundTask = async () => {
+		const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
+		if (isTaskRegistered) {
+			await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
+			console.log("Task unregistered successfully");
+		}
+		try {
+			const interval = isDaytime() ? convertToSeconds(dayCooldown) : convertToSeconds(nightCooldown);
+			await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
+				minimumInterval: interval,
+				stopOnTerminate: false,
+				startOnBoot: true,
+			});
+			console.log(`Task registered with interval ${interval}`);
+		} catch (error) {
+			console.error("Error registering background task:", error);
+		}
+	};
+
+	const handleToggle = async () => {
 		const newState = !isBackgroundTaskEnabled;
 		setIsBackgroundTaskEnabled(newState);
 
@@ -57,6 +88,14 @@ export default function App() {
 		return currentHour >= 7 && currentHour < 23;
 	};
 
+	Notifications.setNotificationHandler({
+		handleNotification: async () => ({
+			shouldShowAlert: true,
+			shouldPlaySound: true,
+			shouldSetBadge: false,
+		}),
+	});
+
 	const sendNotification = async (message) => {
 		await Notifications.scheduleNotificationAsync({
 			content: {
@@ -65,8 +104,7 @@ export default function App() {
 			},
 			trigger: null,
 		});
-		console.log("notification sent!!");
-	}; */
+	};
 
 	const handleSaveData = async (newData) => {
 		try {
@@ -75,9 +113,10 @@ export default function App() {
 			if (lastData) {
 				if (lastData !== newData) {
 					console.log("New data is different from the last saved data.");
-					/* await sendNotification("New data is different from the last saved data."); */
+					await sendNotification("New data is different from the last saved data.");
 				} else {
 					console.log("Data is unchanged.");
+                    await sendNotification("Data is unchanged.");
 				}
 			}
 
@@ -93,36 +132,6 @@ export default function App() {
 			console.error("Failed to save data:", error);
 		}
 	};
-
-	/* const BACKGROUND_TASK_NAME = "handleSubmitFormTask";
-
-	TaskManager.defineTask(BACKGROUND_TASK_NAME, () => {
-		try {
-			console.log("Background task running");
-			handleSubmitForm();
-			return BackgroundFetch.Result.NewData;
-		} catch (error) {
-			console.error("Error in background task:", error);
-			return BackgroundFetch.Result.Failed;
-		}
-	});
-
-	const registerBackgroundTask = async () => {
-		try {
-			const interval = isDaytime() ? convertToSeconds(dayCooldown) : convertToSeconds(nightCooldown);
-
-			await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
-			await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
-				minimumInterval: interval,
-				stopOnTerminate: false,
-				startOnBoot: true,
-			});
-
-			console.log(`Background task registered with interval: ${interval} seconds`);
-		} catch (error) {
-			console.error("Error registering background task:", error);
-		}
-	}; */
 
 	const handleSubmitForm = () => {
 		setIsWebViewVisible(true);
@@ -197,12 +206,12 @@ export default function App() {
 			console.log("2");
 		}, 5000);
 		/* 
-			setTimeout(() => {
-				webviewRef.current.injectJavaScript(obys7toobys4);
-				setStatus("Changed the URL");
-				console.log("3");
-			}, 20000);
-            */
+        setTimeout(() => {
+            webviewRef.current.injectJavaScript(obys7toobys4);
+            setStatus("Changed the URL");
+            console.log("3");
+        }, 20000);
+        */
 		setTimeout(() => {
 			webviewRef.current.injectJavaScript(getGrades);
 			setStatus("Sent grades to the grades tab.");
@@ -221,14 +230,14 @@ export default function App() {
 				await MediaLibrary.requestPermissionsAsync();
 				await Notifications.requestPermissionsAsync();
 
-				/* const savedState = await AsyncStorage.getItem("isBackgroundTaskEnabled");
+				const savedState = await AsyncStorage.getItem("isBackgroundTaskEnabled");
 				if (savedState !== null) {
 					setIsBackgroundTaskEnabled(JSON.parse(savedState));
 				}
 
 				if (isBackgroundTaskEnabled) {
 					registerBackgroundTask();
-				} */
+				}
 
 				const savedData = await AsyncStorage.getItem(LAST_DATA_KEY);
 				if (savedData) {
@@ -287,7 +296,7 @@ export default function App() {
 					<Text style={styles.status}>Status: {status}</Text>
 					<View style={styles.dropdownWrapper}>
 						<Text style={styles.dropdownLabel}>Enable Background Task</Text>
-						<Switch value={isBackgroundTaskEnabled} /* onValueChange={handleToggle} */ />
+						<Switch value={isBackgroundTaskEnabled} onValueChange={handleToggle} />
 					</View>
 				</View>
 			),
@@ -299,11 +308,13 @@ export default function App() {
 				<View style={styles.dataPage}>
 					<Text style={styles.title}>Data</Text>
 					{data ? (
-						<Text style={styles.textPlace}>
+						<ScrollView contentContainerStyle={styles.scrollContent}>
 							{data.split("\n").map((line, index) => (
-								<Text key={index}>{line + "\n"}</Text>
+								<Text key={index} style={styles.lineText}>
+									{line}
+								</Text>
 							))}
-						</Text>
+						</ScrollView>
 					) : (
 						<Text style={styles.textPlace}>No data available. Fetch data to display here.</Text>
 					)}
@@ -328,7 +339,7 @@ export default function App() {
 								const fetchedData = event.nativeEvent.data;
 								console.log("Fetched Data from WebView:", fetchedData);
 								setData(fetchedData);
-                                handleSaveData(fetchedData);
+								handleSaveData(fetchedData);
 							}}
 						/>
 					)}
@@ -394,9 +405,10 @@ const styles = StyleSheet.create({
 		paddingTop: 20,
 	},
 	textPlace: {
-		color: "#fff",
-		fontSize: 12,
+		color: "white",
+		fontSize: 16,
 		marginTop: 10,
+		padding: 30,
 	},
 	picker: {
 		height: 50,
@@ -419,4 +431,8 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		marginBottom: 5,
 	},
+    lineText: {
+        color: 'white',
+        paddingHorizontal: 20,
+    }
 });

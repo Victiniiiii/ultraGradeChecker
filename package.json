@@ -1,37 +1,32 @@
 {
-  "name": "reactnative",
-  "license": "0BSD",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.1.0",
-    "@react-native-picker/picker": "^2.10.2",
-    "axios": "^1.7.9",
-    "cheerio": "^1.0.0",
-    "expo": "~52.0.11",
-    "expo-background-fetch": "~13.0.3",
-    "expo-file-system": "~18.0.4",
-    "expo-media-library": "~17.0.3",
-    "expo-notifications": "~0.29.11",
-    "expo-status-bar": "~2.0.0",
-    "expo-task-manager": "~12.0.3",
-    "moment-timezone": "^0.5.46",
-    "react": "18.3.1",
-    "react-native": "0.76.3",
-    "react-native-background-fetch": "^4.2.6",
-    "react-native-fs": "^2.20.0",
-    "react-native-notifications": "^5.1.0",
-    "react-native-push-notification": "^8.1.1",
-    "react-native-webview": "13.12.2"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.20.0"
-  },
-  "private": true
+	"name": "reactnative",
+	"license": "0BSD",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"start": "expo start",
+		"android": "expo run:android",
+		"ios": "expo run:ios",
+		"web": "expo start --web"
+	},
+	"dependencies": {
+		"@react-native-async-storage/async-storage": "1.23.1",
+		"@react-native-picker/picker": "2.9.0",
+		"expo": "~52.0.11",
+		"expo-background-fetch": "~13.0.3",
+		"expo-file-system": "~18.0.4",
+		"expo-media-library": "~17.0.3",
+		"expo-notifications": "~0.29.11",
+		"expo-status-bar": "~2.0.0",
+		"expo-task-manager": "~12.0.3",
+		"expo-updates": "^0.26.10",
+		"moment-timezone": "^0.5.46",
+		"react": "18.3.1",
+		"react-native": "0.76.3",
+		"react-native-webview": "13.12.5"
+	},
+	"devDependencies": {
+		"@babel/core": "^7.25.2"
+	},
+	"private": true
 }
