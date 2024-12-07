@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { SafeAreaView, Button, Text, View, StyleSheet, Dimensions, FlatList, Switch, TouchableOpacity, ScrollView } from "react-native";
+import { SafeAreaView, Button, Text, View, StyleSheet, Dimensions, FlatList, Switch, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { WebView } from "react-native-webview";
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -9,7 +9,6 @@ import * as MediaLibrary from "expo-media-library";
 import * as FileSystem from "expo-file-system";
 import * as Notifications from "expo-notifications";
 import moment from "moment-timezone";
-import { username, password } from "./credentials";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -19,6 +18,8 @@ export default function App() {
 	const [status, setStatus] = useState("Not Logged In");
 	const [dayCooldown, setDayCooldown] = useState("15 minutes");
 	const [nightCooldown, setNightCooldown] = useState("1 hour");
+	const [username, setUsername] = useState("");
+	const [password, setPassword] = useState("");
 	const [isBackgroundTaskEnabled, setIsBackgroundTaskEnabled] = useState(false);
 	const [isWebViewVisible, setIsWebViewVisible] = useState(false);
 	const webviewRef = useRef(null);
@@ -30,6 +31,7 @@ export default function App() {
 	TaskManager.defineTask(BACKGROUND_TASK_NAME, () => {
 		try {
 			console.log("Background task running");
+			sendNotification("Background task running");
 			handleSubmitForm();
 			return BackgroundFetch.Result.NewData;
 		} catch (error) {
@@ -116,7 +118,7 @@ export default function App() {
 					await sendNotification("New data is different from the last saved data.");
 				} else {
 					console.log("Data is unchanged.");
-                    await sendNotification("Data is unchanged.");
+					await sendNotification("Data is unchanged.");
 				}
 			}
 
@@ -131,6 +133,11 @@ export default function App() {
 		} catch (error) {
 			console.error("Failed to save data:", error);
 		}
+	};
+
+	const saveCredentials = async () => {
+		await AsyncStorage.setItem("username", username);
+		await AsyncStorage.setItem("password", password);
 	};
 
 	const handleSubmitForm = () => {
@@ -230,6 +237,16 @@ export default function App() {
 				await MediaLibrary.requestPermissionsAsync();
 				await Notifications.requestPermissionsAsync();
 
+				const savedUsername = await AsyncStorage.getItem("username");
+				const savedPassword = await AsyncStorage.getItem("password");
+
+				if (savedUsername) {
+					setUsername(savedUsername);
+				}
+				if (savedPassword) {
+					setPassword(savedPassword);
+				}
+
 				const savedState = await AsyncStorage.getItem("isBackgroundTaskEnabled");
 				if (savedState !== null) {
 					setIsBackgroundTaskEnabled(JSON.parse(savedState));
@@ -263,27 +280,43 @@ export default function App() {
 			key: "settings",
 			backgroundColor: "#222",
 			content: (
-				<View style={styles.settingsContainer}>
-					<Text style={styles.title}>Settings</Text>
-					<View style={styles.dropdownWrapper}>
-						<Text style={styles.dropdownLabel}>Day Cooldown</Text>
-						<Picker selectedValue={dayCooldown} onValueChange={(value) => setDayCooldown(value)} style={styles.picker}>
-							<Picker.Item label="5 minutes" value="5 minutes" />
-							<Picker.Item label="10 minutes" value="10 minutes" />
-							<Picker.Item label="15 minutes" value="15 minutes" />
-							<Picker.Item label="30 minutes" value="30 minutes" />
-						</Picker>
-					</View>
-					<View style={styles.dropdownWrapper}>
-						<Text style={styles.dropdownLabel}>Night Cooldown</Text>
-						<Picker selectedValue={nightCooldown} onValueChange={(value) => setNightCooldown(value)} style={styles.picker}>
-							<Picker.Item label="15 minutes" value="15 minutes" />
-							<Picker.Item label="30 minutes" value="30 minutes" />
-							<Picker.Item label="1 hour" value="1 hour" />
-							<Picker.Item label="2 hours" value="2 hours" />
-						</Picker>
-					</View>
-				</View>
+				<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : null}>
+					<TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+						<View style={styles.settingsContainer}>
+							<Text style={styles.title}>Settings</Text>
+
+							<View style={styles.dropdownWrapper}>
+								<Text style={styles.dropdownLabel}>Day Cooldown</Text>
+								<Picker selectedValue={dayCooldown} onValueChange={(value) => setDayCooldown(value)} style={styles.picker}>
+									<Picker.Item label="5 minutes" value="5 minutes" />
+									<Picker.Item label="10 minutes" value="10 minutes" />
+									<Picker.Item label="15 minutes" value="15 minutes" />
+									<Picker.Item label="30 minutes" value="30 minutes" />
+								</Picker>
+							</View>
+
+							<View style={styles.dropdownWrapper}>
+								<Text style={styles.dropdownLabel}>Night Cooldown</Text>
+								<Picker selectedValue={nightCooldown} onValueChange={(value) => setNightCooldown(value)} style={styles.picker}>
+									<Picker.Item label="15 minutes" value="15 minutes" />
+									<Picker.Item label="30 minutes" value="30 minutes" />
+									<Picker.Item label="1 hour" value="1 hour" />
+									<Picker.Item label="2 hours" value="2 hours" />
+								</Picker>
+							</View>
+
+							<View style={styles.inputWrapper}>
+								<Text style={styles.inputLabel}>Username</Text>
+								<TextInput style={styles.input} value={username} onChangeText={(text) => setUsername(text)} onBlur={saveCredentials} placeholder="Enter username" />
+							</View>
+
+							<View style={styles.inputWrapper}>
+								<Text style={styles.inputLabel}>Password</Text>
+								<TextInput style={styles.input} value={password} onChangeText={(text) => setPassword(text)} onBlur={saveCredentials} placeholder="Enter password" secureTextEntry />
+							</View>
+						</View>
+					</TouchableWithoutFeedback>
+				</KeyboardAvoidingView>
 			),
 		},
 		{
@@ -431,8 +464,24 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		marginBottom: 5,
 	},
-    lineText: {
-        color: 'white',
-        paddingHorizontal: 20,
-    }
+	lineText: {
+		color: "white",
+		paddingHorizontal: 20,
+	},
+	inputWrapper: {
+		marginBottom: 20,
+	},
+	inputLabel: {
+		color: "#fff",
+		marginBottom: 8,
+	},
+	input: {
+		height: 40,
+		borderColor: "#ccc",
+		borderWidth: 1,
+		borderRadius: 4,
+		paddingLeft: 10,
+		color: "#fff",
+		backgroundColor: "#333",
+	},
 });
