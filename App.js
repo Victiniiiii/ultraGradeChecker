@@ -28,36 +28,37 @@ export default function App() {
 
 	const BACKGROUND_TASK_NAME = "handleSubmitForm";
 
-	TaskManager.defineTask(BACKGROUND_TASK_NAME, () => {
-		try {
-			console.log("Background task running");
-			sendNotification("Background task running");
-			handleSubmitForm();
-			return BackgroundFetch.Result.NewData;
-		} catch (error) {
-			console.error("Error in background task:", error);
-			return BackgroundFetch.Result.Failed;
-		}
-	});
+	TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
+        console.log("Background task executed.");
+        try {
+            await sendNotification("Background task is running.");
+            await handleSubmitForm();
+            return BackgroundFetch.Result.NewData;
+        } catch (error) {
+            console.error("Error in background task:", error);
+            return BackgroundFetch.Result.Failed;
+        }
+    });    
 
 	const registerBackgroundTask = async () => {
-		const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
-		if (isTaskRegistered) {
-			await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
-			console.log("Task unregistered successfully");
-		}
-		try {
-			const interval = isDaytime() ? convertToSeconds(dayCooldown) : convertToSeconds(nightCooldown);
-			await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
-				minimumInterval: interval,
-				stopOnTerminate: false,
-				startOnBoot: true,
-			});
-			console.log(`Task registered with interval ${interval}`);
-		} catch (error) {
-			console.error("Error registering background task:", error);
-		}
-	};
+        const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
+        console.log(`Task already registered: ${isTaskRegistered}`);
+        if (isTaskRegistered) {
+            await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
+            console.log("Task unregistered successfully");
+        }
+        try {
+            const interval = isDaytime() ? convertToSeconds(dayCooldown) : convertToSeconds(nightCooldown);
+            await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
+                minimumInterval: interval,
+                stopOnTerminate: false,
+                startOnBoot: true,
+            });
+            console.log(`Task registered with interval ${interval}`);
+        } catch (error) {
+            console.error("Error registering background task:", error);
+        }
+    };    
 
 	const handleToggle = async () => {
 		const newState = !isBackgroundTaskEnabled;
@@ -211,7 +212,7 @@ export default function App() {
 			webviewRef.current.injectJavaScript(openPage);
 			setStatus("Pressed on the grade page");
 			console.log("2");
-		}, 5000);
+		}, 3500);
 		/* 
         setTimeout(() => {
             webviewRef.current.injectJavaScript(obys7toobys4);
@@ -223,7 +224,7 @@ export default function App() {
 			webviewRef.current.injectJavaScript(getGrades);
 			setStatus("Sent grades to the grades tab.");
 			console.log("4");
-		}, 7500);
+		}, 5500);
 
 		setTimeout(() => {
 			console.log("5");
@@ -240,12 +241,8 @@ export default function App() {
 				const savedUsername = await AsyncStorage.getItem("username");
 				const savedPassword = await AsyncStorage.getItem("password");
 
-				if (savedUsername) {
-					setUsername(savedUsername);
-				}
-				if (savedPassword) {
-					setPassword(savedPassword);
-				}
+				if (savedUsername) { setUsername(savedUsername) }
+				if (savedPassword) { setPassword(savedPassword) }
 
 				const savedState = await AsyncStorage.getItem("isBackgroundTaskEnabled");
 				if (savedState !== null) {
@@ -370,7 +367,7 @@ export default function App() {
 							style={{ flex: 1, marginTop: 100, width: 350, height: 500, maxHeight: 500 }}
 							onMessage={(event) => {
 								const fetchedData = event.nativeEvent.data;
-								console.log("Fetched Data from WebView:", fetchedData);
+								console.log("Fetched Data from WebView.");
 								setData(fetchedData);
 								handleSaveData(fetchedData);
 							}}
