@@ -25,40 +25,35 @@ export default function App() {
 	const webviewRef = useRef(null);
 
 	const LAST_DATA_KEY = "@lastData";
-
 	const BACKGROUND_TASK_NAME = "handleSubmitForm";
 
 	TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
-        console.log("Background task executed.");
-        try {
-            await sendNotification("Background task is running.");
-            await handleSubmitForm();
-            return BackgroundFetch.Result.NewData;
-        } catch (error) {
-            console.error("Error in background task:", error);
-            return BackgroundFetch.Result.Failed;
-        }
-    });    
+		console.log("Background task executed.");
+		try {
+			await handleSubmitForm();
+		} catch (error) {
+			console.error("Error in background task:", error);
+		}
+	});
 
 	const registerBackgroundTask = async () => {
-        const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
-        console.log(`Task already registered: ${isTaskRegistered}`);
-        if (isTaskRegistered) {
-            await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
-            console.log("Task unregistered successfully");
-        }
-        try {
-            const interval = isDaytime() ? convertToSeconds(dayCooldown) : convertToSeconds(nightCooldown);
-            await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
-                minimumInterval: interval,
-                stopOnTerminate: false,
-                startOnBoot: true,
-            });
-            console.log(`Task registered with interval ${interval}`);
-        } catch (error) {
-            console.error("Error registering background task:", error);
-        }
-    };    
+		const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
+		if (isTaskRegistered) {
+			await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
+			console.log("Task unregistered successfully");
+		}
+		try {
+			const interval = isDaytime() ? convertToSeconds(dayCooldown) : convertToSeconds(nightCooldown);
+			await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
+				minimumInterval: interval,
+				stopOnTerminate: false,
+				startOnBoot: true,
+			});
+			console.log(`Task registered with interval ${interval}`);
+		} catch (error) {
+			console.error("Error registering background task:", error);
+		}
+	};
 
 	const handleToggle = async () => {
 		const newState = !isBackgroundTaskEnabled;
@@ -229,6 +224,7 @@ export default function App() {
 		setTimeout(() => {
 			console.log("5");
 			setIsWebViewVisible(false);
+            sendNotification("The function ran");
 		}, 10000);
 	};
 
@@ -241,8 +237,12 @@ export default function App() {
 				const savedUsername = await AsyncStorage.getItem("username");
 				const savedPassword = await AsyncStorage.getItem("password");
 
-				if (savedUsername) { setUsername(savedUsername) }
-				if (savedPassword) { setPassword(savedPassword) }
+				if (savedUsername) {
+					setUsername(savedUsername);
+				}
+				if (savedPassword) {
+					setPassword(savedPassword);
+				}
 
 				const savedState = await AsyncStorage.getItem("isBackgroundTaskEnabled");
 				if (savedState !== null) {
@@ -255,7 +255,7 @@ export default function App() {
 
 				const savedData = await AsyncStorage.getItem(LAST_DATA_KEY);
 				if (savedData) {
-					console.log("Loaded saved data:", savedData);
+					console.log("Loaded saved data");
 					setData(savedData);
 				} else {
 					console.log("No saved data found.");
