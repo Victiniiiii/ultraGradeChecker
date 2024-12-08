@@ -49,7 +49,7 @@ export default function App() {
 				stopOnTerminate: false,
 				startOnBoot: true,
 			});
-			console.log(`Task registered with interval ${interval}`);
+			console.log(`Task registered with interval ${interval} seconds.`);
 		} catch (error) {
 			console.error("Error registering background task:", error);
 		}
@@ -105,31 +105,69 @@ export default function App() {
 	};
 
 	const handleSaveData = async (newData) => {
-		try {
-			const lastData = await AsyncStorage.getItem(LAST_DATA_KEY);
+        if (newData.length < 5) {
+            console.log("Empty newData bug occurred.");
+            await sendNotification("Empty newData bug occurred.");
+            return;
+        }
 
-			if (lastData) {
-				if (lastData !== newData) {
-					console.log("New data is different from the last saved data.");
-					await sendNotification("New data is different from the last saved data.");
-				} else {
-					console.log("Data is unchanged.");
-					await sendNotification("Data is unchanged.");
-				}
-			}
-
-			await AsyncStorage.setItem(LAST_DATA_KEY, newData);
-
-			const filePath = `${FileSystem.documentDirectory}data.csv`;
-			await FileSystem.writeAsStringAsync(filePath, newData, {
-				encoding: FileSystem.EncodingType.UTF8,
-			});
-
-			console.log("Data saved as CSV:", filePath);
-		} catch (error) {
-			console.error("Failed to save data:", error);
-		}
-	};
+        try {
+            const lastData = await AsyncStorage.getItem(LAST_DATA_KEY);
+    
+            if (lastData) {
+                if (lastData !== newData) {
+                    const newRows = newData.split("\n");
+                    const lastRows = lastData.split("\n");
+    
+                    let changesDetected = false;
+                    let differences = [];
+    
+                    for (let i = 0; i < newRows.length; i++) {
+                        const newRow = newRows[i].split(",");
+                        const lastRow = lastRows[i] ? lastRows[i].split(",") : [];
+    
+                        for (let j = 0; j < newRow.length; j++) {
+                            if (newRow[j] !== lastRow[j]) {
+                                changesDetected = true;
+                                differences.push({
+                                    row: i + 1,
+                                    column: j + 1,
+                                    oldValue: lastRow[j] || "N/A", 
+                                    newValue: newRow[j],
+                                });
+                            }
+                        }
+                    }
+    
+                    if (changesDetected) {
+                        console.log("Data has changed. Changes are:");
+                        differences.forEach(diff => {
+                            console.log(`Row ${diff.row}, Column ${diff.column}: 
+                                Old Value: "${diff.oldValue}", New Value: "${diff.newValue}"`);
+                        });
+                        await sendNotification("Data has changed. Changes logged.");
+                    } else {
+                        console.log("Data is unchanged.");
+                        await sendNotification("Data is unchanged.");
+                    }
+                } else {
+                    console.log("Data is unchanged.");
+                    await sendNotification("Data is unchanged.");
+                }
+            }
+    
+            await AsyncStorage.setItem(LAST_DATA_KEY, newData);
+    
+            const filePath = `${FileSystem.documentDirectory}data.csv`;
+            await FileSystem.writeAsStringAsync(filePath, newData, {
+                encoding: FileSystem.EncodingType.UTF8,
+            });
+    
+            console.log("Data saved as CSV:", filePath);
+        } catch (error) {
+            console.error("Failed to save data:", error);
+        }
+    };    
 
 	const saveCredentials = async () => {
 		await AsyncStorage.setItem("username", username);
@@ -207,7 +245,7 @@ export default function App() {
 			webviewRef.current.injectJavaScript(openPage);
 			setStatus("Pressed on the grade page");
 			console.log("2");
-		}, 3500);
+		}, 4500);
 		/* 
         setTimeout(() => {
             webviewRef.current.injectJavaScript(obys7toobys4);
@@ -219,13 +257,13 @@ export default function App() {
 			webviewRef.current.injectJavaScript(getGrades);
 			setStatus("Sent grades to the grades tab.");
 			console.log("4");
-		}, 5500);
+		}, 6500);
 
 		setTimeout(() => {
 			console.log("5");
 			setIsWebViewVisible(false);
-            sendNotification("The function ran");
-		}, 10000);
+			sendNotification("The function ran");
+		}, 11000);
 	};
 
 	useEffect(() => {
@@ -275,7 +313,6 @@ export default function App() {
 	const pages = [
 		{
 			key: "settings",
-			backgroundColor: "#222",
 			content: (
 				<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : null}>
 					<TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
@@ -322,9 +359,9 @@ export default function App() {
 			content: (
 				<View style={styles.mainPage}>
 					<Text style={styles.mainTitle}>gradechecker</Text>
-					<Button title="Login and Fetch Data" onPress={handleSubmitForm} color="#4CAF50" style={styles.button} />
+					<Button title="run the script" onPress={handleSubmitForm} color="#4CAF50" style={styles.button} />
 					<Text style={styles.status}>Status: {status}</Text>
-					<View style={styles.dropdownWrapper}>
+					<View style={styles.dropdownWrapper2}>
 						<Text style={styles.dropdownLabel}>Enable Background Task</Text>
 						<Switch value={isBackgroundTaskEnabled} onValueChange={handleToggle} />
 					</View>
@@ -339,11 +376,17 @@ export default function App() {
 					<Text style={styles.title}>Data</Text>
 					{data ? (
 						<ScrollView contentContainerStyle={styles.scrollContent}>
-							{data.split("\n").map((line, index) => (
-								<Text key={index} style={styles.lineText}>
-									{line}
-								</Text>
-							))}
+							{data
+								.split("\n")
+								.map((line, index) => {
+									const cleanedLine = line.replace(/-FEN\.FAK\.SEÇ\.I - FAKÜLTE SEÇMELİ DERSLER I|-İST\.ALAN\.SEÇ\.I - İSTATİSTİK ALAN SEÇMELİ I|-FEN\.FAK\.SEÇ\.II - FAKÜLTE SEÇMELİ DERSLER II|-İST\.ALAN\.SEÇ\.II - İSTATİSTİK ALAN SEÇMELİ II/g, "");
+
+									return (
+										<Text key={index} style={styles.lineText}>
+											{cleanedLine}
+										</Text>
+									);
+								})}
 						</ScrollView>
 					) : (
 						<Text style={styles.textPlace}>No data available. Fetch data to display here.</Text>
@@ -401,6 +444,7 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontWeight: "bold",
 		marginTop: 100,
+        marginBottom: 50,
 	},
 	mainTitle: {
 		fontSize: 30,
@@ -455,6 +499,12 @@ const styles = StyleSheet.create({
 		marginVertical: 10,
 		width: "80%",
 	},
+    dropdownWrapper2: {
+        marginVertical: 10,
+		width: "80%",
+        flexDirection: "row",
+        alignItems: "center",
+    },
 	dropdownLabel: {
 		fontSize: 16,
 		fontWeight: "bold",
@@ -464,9 +514,12 @@ const styles = StyleSheet.create({
 	lineText: {
 		color: "white",
 		paddingHorizontal: 20,
+        paddingVertical: 5,
 	},
 	inputWrapper: {
 		marginBottom: 20,
+        marginVertical: 10,
+		width: "80%",
 	},
 	inputLabel: {
 		color: "#fff",
