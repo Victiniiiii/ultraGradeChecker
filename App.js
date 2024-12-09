@@ -23,16 +23,37 @@ export default function App() {
 	const [isBackgroundTaskEnabled, setIsBackgroundTaskEnabled] = useState(false);
 	const [isWebViewVisible, setIsWebViewVisible] = useState(false);
 	const webviewRef = useRef(null);
+	const [logs, setLogs] = useState([]);
 
-	const LAST_DATA_KEY = "@lastData";
+    const LAST_DATA_KEY = "@lastData";
 	const BACKGROUND_TASK_NAME = "handleSubmitForm";
 
+	const addLog = async (message) => {
+		const timestamp = moment().tz("Europe/Istanbul").format("DD-MM-YYYY HH:mm:ss");
+		const newLog = `${timestamp} - ${message}`;
+		const fileUri = `${FileSystem.documentDirectory}logs.txt`;
+
+        console.log(newLog);
+
+        const fileInfo = await FileSystem.getInfoAsync(fileUri);
+
+        if (fileInfo.exists) {
+            const existingLogs = await FileSystem.readAsStringAsync(fileUri);
+            const updatedLogs = existingLogs + newLog + "\n";
+            await FileSystem.writeAsStringAsync(fileUri, updatedLogs);
+        } else {
+            await FileSystem.writeAsStringAsync(fileUri, newLog + "\n");
+        }
+
+        setLogs((prevLogs) => [...prevLogs, newLog]);
+	};
+
 	TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
-		console.log("Background task executed.");
+		addLog("Background task executed.");
 		try {
 			await handleSubmitForm();
 		} catch (error) {
-			console.error("Error in background task:", error);
+			addLog("Error in background task:", error);
 		}
 	});
 
@@ -40,7 +61,7 @@ export default function App() {
 		const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
 		if (isTaskRegistered) {
 			await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
-			console.log("Task unregistered successfully");
+			addLog("Task unregistered successfully");
 		}
 		try {
 			const interval = isDaytime() ? convertToSeconds(dayCooldown) : convertToSeconds(nightCooldown);
@@ -49,9 +70,9 @@ export default function App() {
 				stopOnTerminate: false,
 				startOnBoot: true,
 			});
-			console.log(`Task registered with interval ${interval} seconds.`);
+			addLog(`Task registered with interval ${interval} seconds.`);
 		} catch (error) {
-			console.error("Error registering background task:", error);
+			addLog("Error registering background task:", error);
 		}
 	};
 
@@ -60,7 +81,7 @@ export default function App() {
 		setIsBackgroundTaskEnabled(newState);
 
 		try {
-			console.log(`Background task is ${newState ? "enabled" : "disabled"}`);
+			addLog(`Background task is ${newState ? "enabled" : "disabled"}`);
 			await AsyncStorage.setItem("isBackgroundTaskEnabled", JSON.stringify(newState));
 
 			if (newState) {
@@ -69,7 +90,7 @@ export default function App() {
 				await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
 			}
 		} catch (error) {
-			console.error("Error handling toggle:", error);
+			addLog("Error handling toggle:", error);
 		}
 	};
 
@@ -85,6 +106,14 @@ export default function App() {
 		const currentHour = now.hour();
 		return currentHour >= 7 && currentHour < 23;
 	};
+
+    function onPageLoad(callback) {
+        if (document.readyState === "complete") {
+            callback();
+        } else {
+            window.addEventListener("load", callback);
+        }
+    }
 
 	Notifications.setNotificationHandler({
 		handleNotification: async () => ({
@@ -105,69 +134,68 @@ export default function App() {
 	};
 
 	const handleSaveData = async (newData) => {
-        if (newData.length < 5) {
-            console.log("Empty newData bug occurred.");
-            await sendNotification("Empty newData bug occurred.");
-            return;
-        }
+		if (newData.length < 5) {
+			addLog("Empty newData bug occurred.");
+			await sendNotification("Empty newData bug occurred.");
+			return;
+		}
 
-        try {
-            const lastData = await AsyncStorage.getItem(LAST_DATA_KEY);
-    
-            if (lastData) {
-                if (lastData !== newData) {
-                    const newRows = newData.split("\n");
-                    const lastRows = lastData.split("\n");
-    
-                    let changesDetected = false;
-                    let differences = [];
-    
-                    for (let i = 0; i < newRows.length; i++) {
-                        const newRow = newRows[i].split(",");
-                        const lastRow = lastRows[i] ? lastRows[i].split(",") : [];
-    
-                        for (let j = 0; j < newRow.length; j++) {
-                            if (newRow[j] !== lastRow[j]) {
-                                changesDetected = true;
-                                differences.push({
-                                    row: i + 1,
-                                    column: j + 1,
-                                    oldValue: lastRow[j] || "N/A", 
-                                    newValue: newRow[j],
-                                });
-                            }
-                        }
-                    }
-    
-                    if (changesDetected) {
-                        console.log("Data has changed. Changes are:");
-                        differences.forEach(diff => {
-                            console.log(`Row ${diff.row}, Column ${diff.column}: 
-                                Old Value: "${diff.oldValue}", New Value: "${diff.newValue}"`);
-                        });
-                        await sendNotification("Data has changed. Changes logged.");
-                    } else {
-                        console.log("Data is unchanged.");
-                        await sendNotification("Data is unchanged.");
-                    }
-                } else {
-                    console.log("Data is unchanged.");
-                    await sendNotification("Data is unchanged.");
-                }
-            }
-    
-            await AsyncStorage.setItem(LAST_DATA_KEY, newData);
-    
-            const filePath = `${FileSystem.documentDirectory}data.csv`;
-            await FileSystem.writeAsStringAsync(filePath, newData, {
-                encoding: FileSystem.EncodingType.UTF8,
-            });
-    
-            console.log("Data saved as CSV:", filePath);
-        } catch (error) {
-            console.error("Failed to save data:", error);
-        }
-    };    
+		try {
+			const lastData = await AsyncStorage.getItem(LAST_DATA_KEY);
+
+			if (lastData) {
+				if (lastData !== newData) {
+					const newRows = newData.split("\n");
+					const lastRows = lastData.split("\n");
+
+					let changesDetected = false;
+					let differences = [];
+
+					for (let i = 0; i < newRows.length; i++) {
+						const newRow = newRows[i].split(",");
+						const lastRow = lastRows[i] ? lastRows[i].split(",") : [];
+
+						for (let j = 0; j < newRow.length; j++) {
+							if (newRow[j] !== lastRow[j]) {
+								changesDetected = true;
+								differences.push({
+									row: i + 1,
+									column: j + 1,
+									oldValue: lastRow[j] || "N/A",
+									newValue: newRow[j],
+								});
+							}
+						}
+					}
+
+					if (changesDetected) {
+						addLog("Data has changed. Changes are:");
+						differences.forEach((diff) => {
+							addLog(`Row ${diff.row}, Column ${diff.column}: Old Value: "${diff.oldValue}", New Value: "${diff.newValue}"`);
+						});
+						await sendNotification(`Data has changed. Row ${diff.row}, Column ${diff.column}: Old Value: "${diff.oldValue}", New Value: "${diff.newValue}"`);
+					} else {
+						addLog("Data is unchanged.");
+						await sendNotification("Data is unchanged.");
+					}
+				} else {
+					addLog("Data is unchanged.");
+					await sendNotification("Data is unchanged.");
+				}
+			}
+
+			await AsyncStorage.setItem(LAST_DATA_KEY, newData);
+
+			const filePath = `${FileSystem.documentDirectory}data.csv`;
+			await FileSystem.writeAsStringAsync(filePath, newData, {
+				encoding: FileSystem.EncodingType.UTF8,
+			});
+
+			addLog("Data saved as CSV:", filePath);
+		} catch (error) {
+			addLog("Failed to save data:", error);
+		}
+	};
 
 	const saveCredentials = async () => {
 		await AsyncStorage.setItem("username", username);
@@ -177,6 +205,7 @@ export default function App() {
 	const handleSubmitForm = () => {
 		setIsWebViewVisible(true);
 		setStatus("Logging in...");
+        addLog("Logging in...")
 
 		const login = `
                 document.getElementById("username").value = "${username}";
@@ -234,35 +263,35 @@ export default function App() {
                 data = data.map(row => row.join(",")).join("\\n");
                 window.ReactNativeWebView.postMessage(data);
             `;
+        
 
 		setTimeout(() => {
 			webviewRef.current.injectJavaScript(login);
 			setStatus("Logged in!");
-			console.log("1");
+			addLog("Logged in!");
 		}, 2000);
 
 		setTimeout(() => {
 			webviewRef.current.injectJavaScript(openPage);
-			setStatus("Pressed on the grade page");
-			console.log("2");
+			setStatus("Pressed on the grade page.");
+			addLog("Pressed on the grade page.");
 		}, 4500);
 		/* 
         setTimeout(() => {
             webviewRef.current.injectJavaScript(obys7toobys4);
-            setStatus("Changed the URL");
-            console.log("3");
+            setStatus("Changed the URL.");
+            addLog("Changed the URL.");
         }, 20000);
         */
 		setTimeout(() => {
 			webviewRef.current.injectJavaScript(getGrades);
 			setStatus("Sent grades to the grades tab.");
-			console.log("4");
+			addLog("Sent grades to the grades tab.");
 		}, 6500);
 
 		setTimeout(() => {
-			console.log("5");
 			setIsWebViewVisible(false);
-			sendNotification("The function ran");
+			addLog("The function has finished running.");
 		}, 11000);
 	};
 
@@ -275,6 +304,10 @@ export default function App() {
 				const savedUsername = await AsyncStorage.getItem("username");
 				const savedPassword = await AsyncStorage.getItem("password");
 
+				const savedState = await AsyncStorage.getItem("isBackgroundTaskEnabled");
+				const savedData = await AsyncStorage.getItem(LAST_DATA_KEY);
+				const fileUri = `${FileSystem.documentDirectory}logs.txt`;
+
 				if (savedUsername) {
 					setUsername(savedUsername);
 				}
@@ -282,7 +315,6 @@ export default function App() {
 					setPassword(savedPassword);
 				}
 
-				const savedState = await AsyncStorage.getItem("isBackgroundTaskEnabled");
 				if (savedState !== null) {
 					setIsBackgroundTaskEnabled(JSON.parse(savedState));
 				}
@@ -291,15 +323,24 @@ export default function App() {
 					registerBackgroundTask();
 				}
 
-				const savedData = await AsyncStorage.getItem(LAST_DATA_KEY);
 				if (savedData) {
-					console.log("Loaded saved data");
+					addLog("Loaded saved data.");
 					setData(savedData);
 				} else {
-					console.log("No saved data found.");
+					addLog("No saved data found.");
+				}
+
+				try {
+					const fileInfo = await FileSystem.getInfoAsync(fileUri);
+					if (fileInfo.exists) {
+						const fileContent = await FileSystem.readAsStringAsync(fileUri);
+						setLogs(fileContent.split("\n").filter((line) => line.trim() !== ""));
+					}
+				} catch (error) {
+					addLog("Error loading logs:", error);
 				}
 			} catch (error) {
-				console.error("Error loading saved data:", error);
+				addLog("Error loading saved data:", error);
 			}
 		};
 
@@ -354,6 +395,30 @@ export default function App() {
 			),
 		},
 		{
+			key: "data",
+			backgroundColor: "#144",
+			content: (
+				<View style={styles.dataPage}>
+					<Text style={styles.title}>Data</Text>
+					{data ? (
+						<ScrollView contentContainerStyle={styles.scrollContent}>
+							{data.split("\n").map((line, index) => {
+								const cleanedLine = line.replace(/-FEN\.FAK\.SEÇ\.I - FAKÜLTE SEÇMELİ DERSLER I|-İST\.ALAN\.SEÇ\.I - İSTATİSTİK ALAN SEÇMELİ I|-FEN\.FAK\.SEÇ\.II - FAKÜLTE SEÇMELİ DERSLER II|-İST\.ALAN\.SEÇ\.II - İSTATİSTİK ALAN SEÇMELİ II/g, "");
+
+								return (
+									<Text key={index} style={styles.lineText}>
+										{cleanedLine}
+									</Text>
+								);
+							})}
+						</ScrollView>
+					) : (
+						<Text style={styles.textPlace}>No data available. Fetch data to display here.</Text>
+					)}
+				</View>
+			),
+		},
+		{
 			key: "main",
 			backgroundColor: "#133",
 			content: (
@@ -365,32 +430,6 @@ export default function App() {
 						<Text style={styles.dropdownLabel}>Enable Background Task</Text>
 						<Switch value={isBackgroundTaskEnabled} onValueChange={handleToggle} />
 					</View>
-				</View>
-			),
-		},
-		{
-			key: "data",
-			backgroundColor: "#144",
-			content: (
-				<View style={styles.dataPage}>
-					<Text style={styles.title}>Data</Text>
-					{data ? (
-						<ScrollView contentContainerStyle={styles.scrollContent}>
-							{data
-								.split("\n")
-								.map((line, index) => {
-									const cleanedLine = line.replace(/-FEN\.FAK\.SEÇ\.I - FAKÜLTE SEÇMELİ DERSLER I|-İST\.ALAN\.SEÇ\.I - İSTATİSTİK ALAN SEÇMELİ I|-FEN\.FAK\.SEÇ\.II - FAKÜLTE SEÇMELİ DERSLER II|-İST\.ALAN\.SEÇ\.II - İSTATİSTİK ALAN SEÇMELİ II/g, "");
-
-									return (
-										<Text key={index} style={styles.lineText}>
-											{cleanedLine}
-										</Text>
-									);
-								})}
-						</ScrollView>
-					) : (
-						<Text style={styles.textPlace}>No data available. Fetch data to display here.</Text>
-					)}
 				</View>
 			),
 		},
@@ -407,10 +446,10 @@ export default function App() {
 							javaScriptEnabled={true}
 							userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 							startInLoadingState={true}
-							style={{ flex: 1, marginTop: 100, width: 350, height: 500, maxHeight: 500 }}
+							style={{ flex: 1, marginTop: 100, width: 375, height: 750, maxHeight: 500 }}
 							onMessage={(event) => {
 								const fetchedData = event.nativeEvent.data;
-								console.log("Fetched Data from WebView.");
+								addLog("Fetched Data from WebView.");
 								setData(fetchedData);
 								handleSaveData(fetchedData);
 							}}
@@ -419,11 +458,27 @@ export default function App() {
 				</View>
 			),
 		},
+		{
+			key: "logs",
+			backgroundColor: "#222",
+			content: (
+				<View style={styles.logsPage}>
+					<Text style={styles.title}>Logs</Text>
+					<ScrollView style={styles.logContainer}>
+						{[...logs].reverse().map((log, index) => (
+							<Text key={index} style={styles.logText}>
+								{log}
+							</Text>
+						))}
+					</ScrollView>
+				</View>
+			),
+		},
 	];
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<FlatList data={pages} horizontal pagingEnabled renderItem={renderPage} keyExtractor={(item) => item.key} showsHorizontalScrollIndicator={false} initialScrollIndex={1} getItemLayout={(data, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index })} />
+			<FlatList data={pages} horizontal pagingEnabled renderItem={renderPage} keyExtractor={(item) => item.key} showsHorizontalScrollIndicator={false} initialScrollIndex={2} getItemLayout={(data, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index })} />
 		</SafeAreaView>
 	);
 }
@@ -433,6 +488,10 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#000",
 	},
+    debugPage: {
+        flex: 1,
+        alignItems: "center",
+    },
 	page: {
 		width: SCREEN_WIDTH,
 		flex: 1,
@@ -444,7 +503,7 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontWeight: "bold",
 		marginTop: 100,
-        marginBottom: 50,
+		marginBottom: 50,
 	},
 	mainTitle: {
 		fontSize: 30,
@@ -499,12 +558,12 @@ const styles = StyleSheet.create({
 		marginVertical: 10,
 		width: "80%",
 	},
-    dropdownWrapper2: {
-        marginVertical: 10,
+	dropdownWrapper2: {
+		marginVertical: 10,
 		width: "80%",
-        flexDirection: "row",
-        alignItems: "center",
-    },
+		flexDirection: "row",
+		alignItems: "center",
+	},
 	dropdownLabel: {
 		fontSize: 16,
 		fontWeight: "bold",
@@ -514,11 +573,11 @@ const styles = StyleSheet.create({
 	lineText: {
 		color: "white",
 		paddingHorizontal: 20,
-        paddingVertical: 5,
+		paddingVertical: 5,
 	},
 	inputWrapper: {
 		marginBottom: 20,
-        marginVertical: 10,
+		marginVertical: 10,
 		width: "80%",
 	},
 	inputLabel: {
@@ -533,5 +592,24 @@ const styles = StyleSheet.create({
 		paddingLeft: 10,
 		color: "#fff",
 		backgroundColor: "#333",
+	},
+	logsPage: {
+		flex: 1,
+		padding: 16,
+		backgroundColor: "#222",
+        alignItems: "center",
+	},
+	logContainer: {
+		flex: 1,
+		backgroundColor: "#333",
+		borderRadius: 8,
+		padding: 16,
+		marginBottom: 16,
+	},
+	logText: {
+		fontSize: 14,
+		color: "#ccc",
+		marginBottom: 16,
+        marginTop: -8,
 	},
 });
