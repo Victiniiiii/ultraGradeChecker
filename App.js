@@ -24,7 +24,7 @@ export default function App() {
 	const webviewRef = useRef(null);
 	const [logs, setLogs] = useState([]);
 
-    const LAST_DATA_KEY = "@lastData";
+	const LAST_DATA_KEY = "@lastData";
 	const BACKGROUND_TASK_NAME = "handleSubmitForm";
 
 	const addLog = async (message) => {
@@ -32,19 +32,19 @@ export default function App() {
 		const newLog = `${timestamp} - ${message}`;
 		const fileUri = `${FileSystem.documentDirectory}logs.txt`;
 
-        console.log(newLog);
+		console.log(newLog);
 
-        const fileInfo = await FileSystem.getInfoAsync(fileUri);
+		const fileInfo = await FileSystem.getInfoAsync(fileUri);
 
-        if (fileInfo.exists) {
-            const existingLogs = await FileSystem.readAsStringAsync(fileUri);
-            const updatedLogs = existingLogs + newLog + "\n";
-            await FileSystem.writeAsStringAsync(fileUri, updatedLogs);
-        } else {
-            await FileSystem.writeAsStringAsync(fileUri, newLog + "\n");
-        }
+		if (fileInfo.exists) {
+			const existingLogs = await FileSystem.readAsStringAsync(fileUri);
+			const updatedLogs = existingLogs + newLog + "\n";
+			await FileSystem.writeAsStringAsync(fileUri, updatedLogs);
+		} else {
+			await FileSystem.writeAsStringAsync(fileUri, newLog + "\n");
+		}
 
-        setLogs((prevLogs) => [...prevLogs, newLog]);
+		setLogs((prevLogs) => [...prevLogs, newLog]);
 	};
 
 	TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
@@ -106,13 +106,13 @@ export default function App() {
 		return currentHour >= 7 && currentHour < 23;
 	};
 
-    function onPageLoad(callback) {
-        if (document.readyState === "complete") {
-            callback();
-        } else {
-            window.addEventListener("load", callback);
-        }
-    }
+	function onPageLoad(callback) {
+		if (document.readyState === "complete") {
+			callback();
+		} else {
+			window.addEventListener("load", callback);
+		}
+	}
 
 	Notifications.setNotificationHandler({
 		handleNotification: async () => ({
@@ -150,7 +150,7 @@ export default function App() {
 					let changesDetected = false;
 					let differences = [];
 
-                    const whatwhat = ["Ders adı", "Devam Durumu", "Vize", "Final", "Başarı Notu", "Büt", "Harf Notu", "Sınıf Ortalaması"]
+					const whatwhat = ["Ders adı", "Devam Durumu", "Vize", "Final", "Başarı Notu", "Büt", "Harf Notu", "Sınıf Ortalaması"];
 
 					for (let i = 0; i < newRows.length; i++) {
 						const newRow = newRows[i].split(",");
@@ -162,7 +162,7 @@ export default function App() {
 								differences.push({
 									column: j + 1,
 									newValue: newRow[j],
-                                    changedlesson: newRow[0],
+									changedlesson: newRow[0],
 								});
 							}
 						}
@@ -171,9 +171,10 @@ export default function App() {
 					if (changesDetected) {
 						addLog("Data has changed. Changes are:");
 						differences.forEach((diff) => {
-							addLog(`${changedlesson} ${whatwhat[column]} new value: "${diff.newValue}"`);
+							const columnName = whatwhat[diff.column - 1];
+							addLog(`${diff.changedlesson} ${columnName} new value: "${diff.newValue}"`);
+							sendNotification(`${diff.changedlesson} ${columnName} new value: "${diff.newValue}"`);
 						});
-						await sendNotification(`${changedlesson} ${whatwhat[column]} new value: "${diff.newValue}"`);
 					} else {
 						addLog("Data is unchanged.");
 						await sendNotification("Data is unchanged.");
@@ -205,7 +206,7 @@ export default function App() {
 	const handleSubmitForm = () => {
 		setIsWebViewVisible(true);
 		setStatus("Logging in...");
-        addLog("Logging in...")
+		addLog("Logging in...");
 
 		const login = `
                 document.getElementById("username").value = "${username}";
@@ -231,15 +232,14 @@ export default function App() {
             `;
 
 		const getGrades = `
-                let data = [];
                 let semesterIndex = 0;
-                let courseIndex = 0;
-                
+                let data = [];
                 while (true) {
                     const semesterSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl00_tdDersAdi";
                     if (document.querySelector(semesterSelector) === null) {
                         break;
-                    }                    
+                    }
+                    let courseIndex = 0;
                     while (true) {
                         const courseSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDersAdi";
                         if (document.querySelector(courseSelector) === null) {
@@ -264,7 +264,6 @@ export default function App() {
                 data = data.map(row => row.join(",")).join("\\n");
                 window.ReactNativeWebView.postMessage(data);
             `;
-        
 
 		setTimeout(() => {
 			webviewRef.current.injectJavaScript(login);
@@ -451,6 +450,7 @@ export default function App() {
 							style={{ flex: 1, marginTop: 100, width: 375, height: 750, maxHeight: 500 }}
 							onMessage={(event) => {
 								const fetchedData = event.nativeEvent.data;
+								console.log(fetchedData);
 								addLog("Fetched Data from WebView.");
 								setData(fetchedData);
 								handleSaveData(fetchedData);
@@ -490,10 +490,10 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#000",
 	},
-    debugPage: {
-        flex: 1,
-        alignItems: "center",
-    },
+	debugPage: {
+		flex: 1,
+		alignItems: "center",
+	},
 	page: {
 		width: SCREEN_WIDTH,
 		flex: 1,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		padding: 16,
 		backgroundColor: "#222",
-        alignItems: "center",
+		alignItems: "center",
 	},
 	logContainer: {
 		flex: 1,
@@ -612,6 +612,6 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: "#ccc",
 		marginBottom: 16,
-        marginTop: -8,
+		marginTop: -8,
 	},
 });
