@@ -14,7 +14,6 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function App() {
 	const [data, setData] = useState("");
-	const [semesterIndex, setSemesterIndex] = useState(0);
 	const [status, setStatus] = useState("Not Logged In");
 	const [dayCooldown, setDayCooldown] = useState("15 minutes");
 	const [nightCooldown, setNightCooldown] = useState("1 hour");
@@ -151,6 +150,8 @@ export default function App() {
 					let changesDetected = false;
 					let differences = [];
 
+                    const whatwhat = ["Ders adı", "Devam Durumu", "Vize", "Final", "Başarı Notu", "Büt", "Harf Notu", "Sınıf Ortalaması"]
+
 					for (let i = 0; i < newRows.length; i++) {
 						const newRow = newRows[i].split(",");
 						const lastRow = lastRows[i] ? lastRows[i].split(",") : [];
@@ -159,10 +160,9 @@ export default function App() {
 							if (newRow[j] !== lastRow[j]) {
 								changesDetected = true;
 								differences.push({
-									row: i + 1,
 									column: j + 1,
-									oldValue: lastRow[j] || "N/A",
 									newValue: newRow[j],
+                                    changedlesson: newRow[0],
 								});
 							}
 						}
@@ -171,9 +171,9 @@ export default function App() {
 					if (changesDetected) {
 						addLog("Data has changed. Changes are:");
 						differences.forEach((diff) => {
-							addLog(`Row ${diff.row}, Column ${diff.column}: Old Value: "${diff.oldValue}", New Value: "${diff.newValue}"`);
+							addLog(`${changedlesson} ${whatwhat[column]} new value: "${diff.newValue}"`);
 						});
-						await sendNotification(`Data has changed. Row ${diff.row}, Column ${diff.column}: Old Value: "${diff.oldValue}", New Value: "${diff.newValue}"`);
+						await sendNotification(`${changedlesson} ${whatwhat[column]} new value: "${diff.newValue}"`);
 					} else {
 						addLog("Data is unchanged.");
 						await sendNotification("Data is unchanged.");
@@ -231,14 +231,15 @@ export default function App() {
             `;
 
 		const getGrades = `
-                let semesterIndex = ${semesterIndex};
                 let data = [];
+                let semesterIndex = 0;
+                let courseIndex = 0;
+                
                 while (true) {
                     const semesterSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl00_tdDersAdi";
                     if (document.querySelector(semesterSelector) === null) {
                         break;
-                    }
-                    let courseIndex = 0;
+                    }                    
                     while (true) {
                         const courseSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDersAdi";
                         if (document.querySelector(courseSelector) === null) {
@@ -311,6 +312,7 @@ export default function App() {
 				if (savedUsername) {
 					setUsername(savedUsername);
 				}
+
 				if (savedPassword) {
 					setPassword(savedPassword);
 				}
@@ -403,7 +405,7 @@ export default function App() {
 					{data ? (
 						<ScrollView contentContainerStyle={styles.scrollContent}>
 							{data.split("\n").map((line, index) => {
-								const cleanedLine = line.replace(/-FEN\.FAK\.SEÇ\.I - FAKÜLTE SEÇMELİ DERSLER I|-İST\.ALAN\.SEÇ\.I - İSTATİSTİK ALAN SEÇMELİ I|-FEN\.FAK\.SEÇ\.II - FAKÜLTE SEÇMELİ DERSLER II|-İST\.ALAN\.SEÇ\.II - İSTATİSTİK ALAN SEÇMELİ II/g, "");
+								const cleanedLine = line.replace(/-FEN\.FAK\.SEÇ\.I - FAKÜLTE SEÇMELİ DERSLER I|<br>|-İST\.ALAN\.SEÇ\.I - İSTATİSTİK ALAN SEÇMELİ I|-FEN\.FAK\.SEÇ\.II - FAKÜLTE SEÇMELİ DERSLER II|-İST\.ALAN\.SEÇ\.II - İSTATİSTİK ALAN SEÇMELİ II/g, "");
 
 								return (
 									<Text key={index} style={styles.lineText}>
