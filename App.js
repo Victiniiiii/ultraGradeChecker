@@ -56,7 +56,7 @@ export default function App() {
 	});
 
     const headlessBackgroundTask = () => {
-        console.log("headless function ran !!!! !!  !  ! !")
+        console.log("headless function ran !!!!")
     }
 
 	const registerBackgroundTask = async () => {
@@ -74,7 +74,7 @@ export default function App() {
 				return unit.startsWith("minute") ? parseInt(value) * 60 : unit.startsWith("hour") ? parseInt(value) * 3600 : 0;
 			})();
 			await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
-				minimumInterval: 1,
+				minimumInterval: interval,
 				stopOnTerminate: false,
 				startOnBoot: true,
 			});

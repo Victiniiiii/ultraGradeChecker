@@ -3047,7 +3047,7 @@ expo-asset@~11.0.1:
     invariant "^2.2.4"
     md5-file "^3.2.3"
 
-expo-background-fetch@~13.0.3:
+expo-background-fetch@^13.0.3:
   version "13.0.3"
   resolved "https://registry.npmjs.org/expo-background-fetch/-/expo-background-fetch-13.0.3.tgz"
   integrity sha512-wayjvMima858mvEqsXo6camcoeBLusVJnvMPdG0GKi2d9hKuQXCNP90sShDpgXOEIVzjN0UzZ8PqULgQWbqdAg==
@@ -3148,7 +3148,7 @@ expo-structured-headers@~4.0.0:
   resolved "https://registry.npmjs.org/expo-structured-headers/-/expo-structured-headers-4.0.0.tgz"
   integrity sha512-uPiwZjWq3AdFGgY52+I2nGPrNa6izxAglymPXHUZLekZW290GqIUOk7MBNDD4sg4JwUbSi3gdxEurpEvuq+FSg==
 
-expo-task-manager@~12.0.0, expo-task-manager@~12.0.3:
+expo-task-manager@^12.0.3, expo-task-manager@~12.0.0:
   version "12.0.3"
   resolved "https://registry.npmjs.org/expo-task-manager/-/expo-task-manager-12.0.3.tgz"
   integrity sha512-XNbDWPqBJw9kuWrYFhpcjRBbuxMUlgiFdEUHpm7VmMqGmm86UAZTO20zSGkM0U25yIcmQgsHiEbfV9B2S84dqA==
