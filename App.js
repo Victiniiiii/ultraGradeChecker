@@ -49,14 +49,14 @@ export default function App() {
 	TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
 		addLog("Background task executed.");
 		try {
-			await headlessBackgroundTask();
+			headlessBackgroundTask();
 		} catch (error) {
 			addLog("Error in background task:", error);
 		}
 	});
 
     const headlessBackgroundTask = () => {
-        console.log("headless function ran !!!!")
+        addLog("Headless background task ran.")
     }
 
 	const registerBackgroundTask = async () => {
@@ -311,7 +311,7 @@ export default function App() {
                 window.ReactNativeWebView.postMessage("1");
             `
 			);
-		}, 500);
+		}, 1000);
 	};
 
 	useEffect(() => {
