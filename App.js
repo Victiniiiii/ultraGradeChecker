@@ -31,10 +31,8 @@ export default function App() {
 		const timestamp = moment().tz("Europe/Istanbul").format("DD-MM-YYYY HH:mm:ss");
 		const newLog = `${timestamp} - ${message}`;
 		const fileUri = `${FileSystem.documentDirectory}logs.txt`;
-
+        const fileInfo = await FileSystem.getInfoAsync(fileUri);
 		console.log(newLog);
-
-		const fileInfo = await FileSystem.getInfoAsync(fileUri);
 
 		if (fileInfo.exists) {
 			const existingLogs = await FileSystem.readAsStringAsync(fileUri);
@@ -63,7 +61,13 @@ export default function App() {
 			addLog("Task unregistered successfully");
 		}
 		try {
-			const interval = isDaytime() ? convertToSeconds(dayCooldown) : convertToSeconds(nightCooldown);
+			const interval = (() => {
+				const now = moment().tz("Europe/Istanbul");
+				const currentHour = now.hour();
+				const isDay = currentHour >= 7 && currentHour < 23;
+				const [value, unit] = (isDay ? dayCooldown : nightCooldown).split(" ");
+				return unit.startsWith("minute") ? parseInt(value) * 60 : unit.startsWith("hour") ? parseInt(value) * 3600 : 0;
+			})();
 			await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
 				minimumInterval: interval,
 				stopOnTerminate: false,
@@ -76,6 +80,10 @@ export default function App() {
 	};
 
 	const handleToggle = async () => {
+		if ((username == "") | (password == "")) {
+			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
+			return;
+		}
 		const newState = !isBackgroundTaskEnabled;
 		setIsBackgroundTaskEnabled(newState);
 
@@ -92,27 +100,6 @@ export default function App() {
 			addLog("Error handling toggle:", error);
 		}
 	};
-
-	const convertToSeconds = (timeString) => {
-		const [value, unit] = timeString.split(" ");
-		if (unit.startsWith("minute")) return parseInt(value) * 60;
-		if (unit.startsWith("hour")) return parseInt(value) * 3600;
-		return 0;
-	};
-
-	const isDaytime = () => {
-		const now = moment().tz("Europe/Istanbul");
-		const currentHour = now.hour();
-		return currentHour >= 7 && currentHour < 23;
-	};
-
-	function onPageLoad(callback) {
-		if (document.readyState === "complete") {
-			callback();
-		} else {
-			window.addEventListener("load", callback);
-		}
-	}
 
 	Notifications.setNotificationHandler({
 		handleNotification: async () => ({
@@ -137,6 +124,31 @@ export default function App() {
 			addLog("Empty newData bug occurred.");
 			await sendNotification("Empty newData bug occurred.");
 			return;
+		} else {
+			newData = newData
+				.split("\n")
+				.reduce((acc, line, index, array) => {
+					const trimmedLine = line.trim();
+
+					if (!trimmedLine.includes(",") && trimmedLine !== "" && index + 1 < array.length) {
+						const nextLine = array[index + 1].trim();
+						if (nextLine.includes(",")) {
+							acc.push(`${trimmedLine},${nextLine.replace(/,00/g, "").replace(/^-[^,]+,/, "")}`);
+						}
+					} else if (trimmedLine.includes(",") && !trimmedLine.startsWith("-")) {
+						acc.push(trimmedLine.replace(/,00/g, ""));
+					}
+					return acc;
+				}, [])
+				.filter((line) => line.trim() !== "" && !line.startsWith("-"))
+				.map((line) => {
+					return line.replace(/,([^,]+)$/, (match, p1) => {
+						return p1.includes(".") ? match : `.${p1}`;
+					});
+				})
+				.join("\n");
+
+			setData(newData);
 		}
 
 		try {
@@ -172,8 +184,8 @@ export default function App() {
 						addLog("Data has changed. Changes are:");
 						differences.forEach((diff) => {
 							const columnName = whatwhat[diff.column - 1];
-							addLog(`${diff.changedlesson} ${columnName} new value: "${diff.newValue}"`);
-							sendNotification(`${diff.changedlesson} ${columnName} new value: "${diff.newValue}"`);
+							addLog(`${diff.changedlesson} ${columnName} yeni değeri: "${diff.newValue}"`);
+							sendNotification(`${diff.changedlesson} ${columnName} yeni değeri: "${diff.newValue}"`);
 						});
 					} else {
 						addLog("Data is unchanged.");
@@ -204,6 +216,11 @@ export default function App() {
 	};
 
 	const handleSubmitForm = () => {
+		if ((username == "") | (password == "")) {
+			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
+			return;
+		}
+
 		setIsWebViewVisible(true);
 		setStatus("Logging in...");
 		addLog("Logging in...");
@@ -404,11 +421,9 @@ export default function App() {
 					{data ? (
 						<ScrollView contentContainerStyle={styles.scrollContent}>
 							{data.split("\n").map((line, index) => {
-								const cleanedLine = line.replace(/-FEN\.FAK\.SEÇ\.I - FAKÜLTE SEÇMELİ DERSLER I|<br>|-İST\.ALAN\.SEÇ\.I - İSTATİSTİK ALAN SEÇMELİ I|-FEN\.FAK\.SEÇ\.II - FAKÜLTE SEÇMELİ DERSLER II|-İST\.ALAN\.SEÇ\.II - İSTATİSTİK ALAN SEÇMELİ II/g, "");
-
 								return (
 									<Text key={index} style={styles.lineText}>
-										{cleanedLine}
+										{line}
 									</Text>
 								);
 							})}
@@ -448,11 +463,10 @@ export default function App() {
 							userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 							startInLoadingState={true}
 							style={{ flex: 1, marginTop: 100, width: 375, height: 750, maxHeight: 500 }}
+                            onLoadEnd={console.log("asdasd")}
 							onMessage={(event) => {
 								const fetchedData = event.nativeEvent.data;
-								console.log(fetchedData);
 								addLog("Fetched Data from WebView.");
-								setData(fetchedData);
 								handleSaveData(fetchedData);
 							}}
 						/>
