@@ -14,6 +14,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function App() {
 	const [data, setData] = useState("");
+    const [progress, setProgress] = useState(0);
 	const [status, setStatus] = useState("Not Logged In");
 	const [dayCooldown, setDayCooldown] = useState("15 minutes");
 	const [nightCooldown, setNightCooldown] = useState("1 hour");
@@ -31,7 +32,7 @@ export default function App() {
 		const timestamp = moment().tz("Europe/Istanbul").format("DD-MM-YYYY HH:mm:ss");
 		const newLog = `${timestamp} - ${message}`;
 		const fileUri = `${FileSystem.documentDirectory}logs.txt`;
-        const fileInfo = await FileSystem.getInfoAsync(fileUri);
+		const fileInfo = await FileSystem.getInfoAsync(fileUri);
 		console.log(newLog);
 
 		if (fileInfo.exists) {
@@ -48,11 +49,15 @@ export default function App() {
 	TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
 		addLog("Background task executed.");
 		try {
-			await handleSubmitForm();
+			await headlessBackgroundTask();
 		} catch (error) {
 			addLog("Error in background task:", error);
 		}
 	});
+
+    const headlessBackgroundTask = () => {
+        console.log("headless function ran !!!! !!  !  ! !")
+    }
 
 	const registerBackgroundTask = async () => {
 		const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
@@ -69,7 +74,7 @@ export default function App() {
 				return unit.startsWith("minute") ? parseInt(value) * 60 : unit.startsWith("hour") ? parseInt(value) * 3600 : 0;
 			})();
 			await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
-				minimumInterval: interval,
+				minimumInterval: 1,
 				stopOnTerminate: false,
 				startOnBoot: true,
 			});
@@ -215,40 +220,37 @@ export default function App() {
 		await AsyncStorage.setItem("password", password);
 	};
 
-	const handleSubmitForm = () => {
-		if ((username == "") | (password == "")) {
-			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
-			return;
-		}
-
-		setIsWebViewVisible(true);
-		setStatus("Logging in...");
-		addLog("Logging in...");
-
-		const login = `
-                document.getElementById("username").value = "${username}";
-                document.getElementById("password").value = "${password}";        
-                checkAccountType(document.getElementById("username"));
-                setTimeout(() => {
-                    document.getElementById("login-submit").click();
-                }, 1000);
-            `;
-
-		const openPage = `
+	function openPage() {
+		webviewRef.current.injectJavaScript(`
                 const link = document.querySelector('a[href="/Redirect/Redirect?AppEncId=z3Td%2Fth1x8vcvHw%2BDyN0G7GVy9eklCUQxjzDjMFwZaI%3D"]');
                 link.target = "_self";
-                link.click();                
-            `;
+                link.click();
+                window.ReactNativeWebView.postMessage("2");              
+            `);
+	}
 
-		const obys7toobys4 = `
-                const currentUrl = window.location.href;
+	/* function obys7toobys4() {
+		webviewRef.current.injectJavaScript(`
+            const currentUrl = window.location.href;
+            const pageTitle = document.title;
+        
+            if (pageTitle != "Not Görüntüleme") {
                 if (currentUrl.includes("obys7.ege.edu.tr")) {
                     const newUrl = currentUrl.replace("obys7.ege.edu.tr", "obys4.ege.edu.tr");
                     window.location.href = newUrl;
+                    window.ReactNativeWebView.postMessage("3");
                 }
-            `;
+            } else {
+                window.ReactNativeWebView.postMessage("3");
+            }
+        `);
 
-		const getGrades = `
+		setStatus("Changed the URL.");
+		addLog("Changed the URL.");
+	} */
+
+	function getGrades() {
+		webviewRef.current.injectJavaScript(`
                 let semesterIndex = 0;
                 let data = [];
                 while (true) {
@@ -280,36 +282,36 @@ export default function App() {
 
                 data = data.map(row => row.join(",")).join("\\n");
                 window.ReactNativeWebView.postMessage(data);
-            `;
+            `);
+
+		setStatus("Sent grades to the grades tab.");
+		addLog("Sent grades to the grades tab.");
+	}
+
+	const handleSubmitForm = () => {
+		if ((username == "") | (password == "")) {
+			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
+			return;
+		}
+
+        setProgress(0)
+		setIsWebViewVisible(true);
+		setStatus("Logging in...");
+		addLog("Logging in...");
 
 		setTimeout(() => {
-			webviewRef.current.injectJavaScript(login);
-			setStatus("Logged in!");
-			addLog("Logged in!");
-		}, 2000);
-
-		setTimeout(() => {
-			webviewRef.current.injectJavaScript(openPage);
-			setStatus("Pressed on the grade page.");
-			addLog("Pressed on the grade page.");
-		}, 4500);
-		/* 
-        setTimeout(() => {
-            webviewRef.current.injectJavaScript(obys7toobys4);
-            setStatus("Changed the URL.");
-            addLog("Changed the URL.");
-        }, 20000);
-        */
-		setTimeout(() => {
-			webviewRef.current.injectJavaScript(getGrades);
-			setStatus("Sent grades to the grades tab.");
-			addLog("Sent grades to the grades tab.");
-		}, 6500);
-
-		setTimeout(() => {
-			setIsWebViewVisible(false);
-			addLog("The function has finished running.");
-		}, 11000);
+			webviewRef.current.injectJavaScript(
+				`
+                document.getElementById("username").value = "${username}";
+                document.getElementById("password").value = "${password}";        
+                checkAccountType(document.getElementById("username"));
+                setTimeout(() => {
+                    document.getElementById("login-submit").click();
+                }, 500);
+                window.ReactNativeWebView.postMessage("1");
+            `
+			);
+		}, 500);
 	};
 
 	useEffect(() => {
@@ -463,11 +465,29 @@ export default function App() {
 							userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 							startInLoadingState={true}
 							style={{ flex: 1, marginTop: 100, width: 375, height: 750, maxHeight: 500 }}
-                            onLoadEnd={console.log("asdasd")}
+							onLoadEnd={() => {
+								setTimeout(() => {
+									if (progress == "1") {
+                                        setStatus("Logged in!");
+                                        addLog("Logged in!");
+										openPage();
+									} else if (progress == "2") {
+										setStatus("Pressed on the grade page.");
+										addLog("Pressed on the grade page.");
+										getGrades();
+									}
+								}, 1000);
+							}}
 							onMessage={(event) => {
 								const fetchedData = event.nativeEvent.data;
-								addLog("Fetched Data from WebView.");
-								handleSaveData(fetchedData);
+								console.log("fetchedData :>> ", fetchedData);
+								if (fetchedData != "1" && fetchedData != "2") {
+									addLog("Fetched Data from WebView, the function has finished running.");
+									handleSaveData(fetchedData);
+									setIsWebViewVisible(false);
+								} else {
+									setProgress(fetchedData);
+								}
 							}}
 						/>
 					)}
