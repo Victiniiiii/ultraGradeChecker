@@ -14,7 +14,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function App() {
 	const [data, setData] = useState("");
-    const [progress, setProgress] = useState(0);
+	const [progress, setProgress] = useState(0);
 	const [status, setStatus] = useState("Not Logged In");
 	const [dayCooldown, setDayCooldown] = useState("15 minutes");
 	const [nightCooldown, setNightCooldown] = useState("1 hour");
@@ -55,9 +55,9 @@ export default function App() {
 		}
 	});
 
-    const headlessBackgroundTask = () => {
-        addLog("Headless background task ran.")
-    }
+	const headlessBackgroundTask = () => {
+		addLog("Headless background task ran.");
+	};
 
 	const registerBackgroundTask = async () => {
 		const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
@@ -249,6 +249,16 @@ export default function App() {
 		addLog("Changed the URL.");
 	} */
 
+	function doEverything() {
+		webviewRef.current.injectJavaScript(`
+            if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi") {
+            } else if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" && true) { // Hem giriş hem main menunun başlığı aynı. Sayfada başka bir şeyi daha kontrol et.
+            } else if (document.title == "Not Görüntüleme") {
+            } else { // olmazsa obys1, obys2, obys3 denencek. Çalışıp çalışmadıkları variablelar ile kaydedilcek.
+            }
+        `);
+	}
+
 	function getGrades() {
 		webviewRef.current.injectJavaScript(`
                 let semesterIndex = 0;
@@ -294,7 +304,7 @@ export default function App() {
 			return;
 		}
 
-        setProgress(0)
+		setProgress(0);
 		setIsWebViewVisible(true);
 		setStatus("Logging in...");
 		addLog("Logging in...");
@@ -468,8 +478,8 @@ export default function App() {
 							onLoadEnd={() => {
 								setTimeout(() => {
 									if (progress == "1") {
-                                        setStatus("Logged in!");
-                                        addLog("Logged in!");
+										setStatus("Logged in!");
+										addLog("Logged in!");
 										openPage();
 									} else if (progress == "2") {
 										setStatus("Pressed on the grade page.");
