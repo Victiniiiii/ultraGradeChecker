@@ -15,6 +15,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 export default function App() {
 	const [data, setData] = useState("");
 	const [progress, setProgress] = useState(0);
+	const [obys, tryObys] = useState(0);
 	const [status, setStatus] = useState("Not Logged In");
 	const [dayCooldown, setDayCooldown] = useState("15 minutes");
 	const [nightCooldown, setNightCooldown] = useState("1 hour");
@@ -229,32 +230,21 @@ export default function App() {
             `);
 	}
 
-	/* function obys7toobys4() {
-		webviewRef.current.injectJavaScript(`
-            const currentUrl = window.location.href;
-            const pageTitle = document.title;
-        
-            if (pageTitle != "Not Görüntüleme") {
-                if (currentUrl.includes("obys7.ege.edu.tr")) {
-                    const newUrl = currentUrl.replace("obys7.ege.edu.tr", "obys4.ege.edu.tr");
-                    window.location.href = newUrl;
-                    window.ReactNativeWebView.postMessage("3");
-                }
-            } else {
-                window.ReactNativeWebView.postMessage("3");
-            }
-        `);
-
-		setStatus("Changed the URL.");
-		addLog("Changed the URL.");
-	} */
-
 	function doEverything() {
 		webviewRef.current.injectJavaScript(`
             if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi") {
-            } else if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" && true) { // Hem giriş hem main menunun başlığı aynı. Sayfada başka bir şeyi daha kontrol et.
+            } else if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" && true) { // TODO: Hem giriş hem main menunun başlığı aynı. Sayfada başka bir şeyi daha kontrol et.
             } else if (document.title == "Not Görüntüleme") {
             } else { // olmazsa obys1, obys2, obys3 denencek. Çalışıp çalışmadıkları variablelar ile kaydedilcek.
+                const currentUrl = window.location.href;
+                
+                if (currentUrl.includes("obys7.ege.edu.tr")) { // TODO: Connect obys variable here
+                    const newUrl = currentUrl.replace("obys7.ege.edu.tr", "obys4.ege.edu.tr");
+                    window.location.href = newUrl;
+                } else {
+                    
+                }
+                window.ReactNativeWebView.postMessage("OBYS");
             }
         `);
 	}
