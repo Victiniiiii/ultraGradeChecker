@@ -231,10 +231,60 @@ export default function App() {
 	}
 
 	function doEverything() {
+		if ((username == "") | (password == "")) {
+			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
+            setIsWebViewVisible(false);
+			return;
+		} else {
+			setIsWebViewVisible(true);
+		}
+
 		webviewRef.current.injectJavaScript(`
             if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi") {
+                document.getElementById("username").value = "${username}";
+                document.getElementById("password").value = "${password}";        
+                checkAccountType(document.getElementById("username"));
+                setTimeout(() => {
+                    document.getElementById("login-submit").click();
+                }, 500);
+                window.ReactNativeWebView.postMessage("İlk giriş yapılıyor...");
             } else if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" && true) { // TODO: Hem giriş hem main menunun başlığı aynı. Sayfada başka bir şeyi daha kontrol et.
+                const link = document.querySelector('a[href="/Redirect/Redirect?AppEncId=z3Td%2Fth1x8vcvHw%2BDyN0G7GVy9eklCUQxjzDjMFwZaI%3D"]');
+                link.target = "_self";
+                link.click();
+                window.ReactNativeWebView.postMessage("Not Görüntüleme açılıyor...");
             } else if (document.title == "Not Görüntüleme") {
+                let semesterIndex = 0;
+                let data = [];
+                while (true) {
+                    const semesterSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl00_tdDersAdi";
+                    if (document.querySelector(semesterSelector) === null) {
+                        break;
+                    }
+                    let courseIndex = 0;
+                    while (true) {
+                        const courseSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDersAdi";
+                        if (document.querySelector(courseSelector) === null) {
+                            break;
+                        }
+                        const row = [];
+                        row.push(document.querySelector(courseSelector).innerText.trim());
+                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDevamDurumu").innerText.trim());
+                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdYid").innerText.trim());
+                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_divFinalNotu").innerText.trim());
+                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdBn").innerText.trim());
+                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdBut").innerText.trim());
+                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdHbn").innerText.trim());
+                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdSinifOrtalamasi").innerText.trim());
+
+                        data.push(row);
+                        courseIndex++;
+                    }
+                    semesterIndex++;
+                }
+
+                data = data.map(row => row.join(",")).join("\\n");
+                window.ReactNativeWebView.postMessage(data);
             } else { // olmazsa obys1, obys2, obys3 denencek. Çalışıp çalışmadıkları variablelar ile kaydedilcek.
                 const currentUrl = window.location.href;
                 
@@ -328,6 +378,7 @@ export default function App() {
 				const fileUri = `${FileSystem.documentDirectory}logs.txt`;
 
 				if (savedUsername) {
+					// TODO: ? ve : operatörleriyle kısalt
 					setUsername(savedUsername);
 				}
 
