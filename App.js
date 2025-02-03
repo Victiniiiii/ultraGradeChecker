@@ -233,9 +233,9 @@ export default function App() {
 	function doEverything() {
 		if ((username == "") | (password == "")) {
 			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
-            setIsWebViewVisible(false);
+			setIsWebViewVisible(false);
 			return;
-		} else {
+		} else if (!isWebViewVisible) {
 			setIsWebViewVisible(true);
 		}
 
@@ -372,34 +372,15 @@ export default function App() {
 
 				const savedUsername = await AsyncStorage.getItem("username");
 				const savedPassword = await AsyncStorage.getItem("password");
-
 				const savedState = await AsyncStorage.getItem("isBackgroundTaskEnabled");
 				const savedData = await AsyncStorage.getItem(LAST_DATA_KEY);
 				const fileUri = `${FileSystem.documentDirectory}logs.txt`;
 
-				if (savedUsername) {
-					// TODO: ? ve : operatörleriyle kısalt
-					setUsername(savedUsername);
-				}
-
-				if (savedPassword) {
-					setPassword(savedPassword);
-				}
-
-				if (savedState !== null) {
-					setIsBackgroundTaskEnabled(JSON.parse(savedState));
-				}
-
-				if (isBackgroundTaskEnabled) {
-					registerBackgroundTask();
-				}
-
-				if (savedData) {
-					addLog("Loaded saved data.");
-					setData(savedData);
-				} else {
-					addLog("No saved data found.");
-				}
+				savedUsername ? setUsername(savedUsername) : addLog("No username found.");
+				savedPassword ? setPassword(savedPassword) : addLog("No password found.");
+				savedState !== null ? setIsBackgroundTaskEnabled(JSON.parse(savedState)) : addLog("No data about saved background task.");
+				isBackgroundTaskEnabled ? registerBackgroundTask() : addLog("Background task registered.");
+				savedData ? (addLog("Loaded saved data."), setData(savedData)) : addLog("No saved data found.");
 
 				try {
 					const fileInfo = await FileSystem.getInfoAsync(fileUri);
