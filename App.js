@@ -14,20 +14,17 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function App() {
 	const [data, setData] = useState("");
-	const [progress, setProgress] = useState(0);
 	const [obys, tryObys] = useState(0);
+	const [functionRunning, setFunctionRunning] = useState(false);
 	const [status, setStatus] = useState("Not Logged In");
 	const [dayCooldown, setDayCooldown] = useState("15 minutes");
 	const [nightCooldown, setNightCooldown] = useState("1 hour");
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
-	const [isBackgroundTaskEnabled, setIsBackgroundTaskEnabled] = useState(false);
 	const [isWebViewVisible, setIsWebViewVisible] = useState(false);
 	const webviewRef = useRef(null);
 	const [logs, setLogs] = useState([]);
-
 	const LAST_DATA_KEY = "@lastData";
-	const BACKGROUND_TASK_NAME = "handleSubmitForm";
 
 	const addLog = async (message) => {
 		const timestamp = moment().tz("Europe/Istanbul").format("DD-MM-YYYY HH:mm:ss");
@@ -45,66 +42,6 @@ export default function App() {
 		}
 
 		setLogs((prevLogs) => [...prevLogs, newLog]);
-	};
-
-	TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
-		addLog("Background task executed.");
-		try {
-			headlessBackgroundTask();
-		} catch (error) {
-			addLog("Error in background task:", error);
-		}
-	});
-
-	const headlessBackgroundTask = () => {
-		addLog("Headless background task ran.");
-	};
-
-	const registerBackgroundTask = async () => {
-		const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME);
-		if (isTaskRegistered) {
-			await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
-			addLog("Task unregistered successfully");
-		}
-		try {
-			const interval = (() => {
-				const now = moment().tz("Europe/Istanbul");
-				const currentHour = now.hour();
-				const isDay = currentHour >= 7 && currentHour < 23;
-				const [value, unit] = (isDay ? dayCooldown : nightCooldown).split(" ");
-				return unit.startsWith("minute") ? parseInt(value) * 60 : unit.startsWith("hour") ? parseInt(value) * 3600 : 0;
-			})();
-			await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
-				minimumInterval: interval,
-				stopOnTerminate: false,
-				startOnBoot: true,
-			});
-			addLog(`Task registered with interval ${interval} seconds.`);
-		} catch (error) {
-			addLog("Error registering background task:", error);
-		}
-	};
-
-	const handleToggle = async () => {
-		if ((username == "") | (password == "")) {
-			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
-			return;
-		}
-		const newState = !isBackgroundTaskEnabled;
-		setIsBackgroundTaskEnabled(newState);
-
-		try {
-			addLog(`Background task is ${newState ? "enabled" : "disabled"}`);
-			await AsyncStorage.setItem("isBackgroundTaskEnabled", JSON.stringify(newState));
-
-			if (newState) {
-				await registerBackgroundTask();
-			} else {
-				await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
-			}
-		} catch (error) {
-			addLog("Error handling toggle:", error);
-		}
 	};
 
 	Notifications.setNotificationHandler({
@@ -221,16 +158,9 @@ export default function App() {
 		await AsyncStorage.setItem("password", password);
 	};
 
-	function openPage() {
-		webviewRef.current.injectJavaScript(`
-                const link = document.querySelector('a[href="/Redirect/Redirect?AppEncId=z3Td%2Fth1x8vcvHw%2BDyN0G7GVy9eklCUQxjzDjMFwZaI%3D"]');
-                link.target = "_self";
-                link.click();
-                window.ReactNativeWebView.postMessage("2");              
-            `);
-	}
-
-	function doEverything() {
+	function webviewFunction(first) {
+        first && setFunctionRunning(true);
+        
 		if ((username == "") | (password == "")) {
 			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
 			setIsWebViewVisible(false);
@@ -247,12 +177,12 @@ export default function App() {
                 setTimeout(() => {
                     document.getElementById("login-submit").click();
                 }, 500);
-                window.ReactNativeWebView.postMessage("İlk giriş yapılıyor...");
-            } else if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" && true) { // TODO: Hem giriş hem main menunun başlığı aynı. Sayfada başka bir şeyi daha kontrol et.
+                window.ReactNativeWebView.postMessage("1");
+            } else if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" && document.body.innerText.includes("Not Görüntüleme")) {
                 const link = document.querySelector('a[href="/Redirect/Redirect?AppEncId=z3Td%2Fth1x8vcvHw%2BDyN0G7GVy9eklCUQxjzDjMFwZaI%3D"]');
                 link.target = "_self";
                 link.click();
-                window.ReactNativeWebView.postMessage("Not Görüntüleme açılıyor...");
+                window.ReactNativeWebView.postMessage("2");
             } else if (document.title == "Not Görüntüleme") {
                 let semesterIndex = 0;
                 let data = [];
@@ -285,7 +215,7 @@ export default function App() {
 
                 data = data.map(row => row.join(",")).join("\\n");
                 window.ReactNativeWebView.postMessage(data);
-            } else { // olmazsa obys1, obys2, obys3 denencek. Çalışıp çalışmadıkları variablelar ile kaydedilcek.
+            } else { // TODO olmazsa obys1, obys2, obys3 denencek. Çalışıp çalışmadıkları variablelar ile kaydedilcek.
                 const currentUrl = window.location.href;
                 
                 if (currentUrl.includes("obys7.ege.edu.tr")) { // TODO: Connect obys variable here
@@ -294,75 +224,10 @@ export default function App() {
                 } else {
                     
                 }
-                window.ReactNativeWebView.postMessage("OBYS");
+                window.ReactNativeWebView.postMessage("3");
             }
         `);
 	}
-
-	function getGrades() {
-		webviewRef.current.injectJavaScript(`
-                let semesterIndex = 0;
-                let data = [];
-                while (true) {
-                    const semesterSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl00_tdDersAdi";
-                    if (document.querySelector(semesterSelector) === null) {
-                        break;
-                    }
-                    let courseIndex = 0;
-                    while (true) {
-                        const courseSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDersAdi";
-                        if (document.querySelector(courseSelector) === null) {
-                            break;
-                        }
-                        const row = [];
-                        row.push(document.querySelector(courseSelector).innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDevamDurumu").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdYid").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_divFinalNotu").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdBn").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdBut").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdHbn").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdSinifOrtalamasi").innerText.trim());
-
-                        data.push(row);
-                        courseIndex++;
-                    }
-                    semesterIndex++;
-                }
-
-                data = data.map(row => row.join(",")).join("\\n");
-                window.ReactNativeWebView.postMessage(data);
-            `);
-
-		setStatus("Sent grades to the grades tab.");
-		addLog("Sent grades to the grades tab.");
-	}
-
-	const handleSubmitForm = () => {
-		if ((username == "") | (password == "")) {
-			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
-			return;
-		}
-
-		setProgress(0);
-		setIsWebViewVisible(true);
-		setStatus("Logging in...");
-		addLog("Logging in...");
-
-		setTimeout(() => {
-			webviewRef.current.injectJavaScript(
-				`
-                document.getElementById("username").value = "${username}";
-                document.getElementById("password").value = "${password}";        
-                checkAccountType(document.getElementById("username"));
-                setTimeout(() => {
-                    document.getElementById("login-submit").click();
-                }, 500);
-                window.ReactNativeWebView.postMessage("1");
-            `
-			);
-		}, 1000);
-	};
 
 	useEffect(() => {
 		const initializeApp = async () => {
@@ -474,7 +339,7 @@ export default function App() {
 			content: (
 				<View style={styles.mainPage}>
 					<Text style={styles.mainTitle}>gradechecker</Text>
-					<Button title="run the script" onPress={handleSubmitForm} color="#4CAF50" style={styles.button} />
+					<Button title="run the script" onPress={webviewFunction(true)} color="#4CAF50" style={styles.button} />
 					<Text style={styles.status}>Status: {status}</Text>
 					<View style={styles.dropdownWrapper2}>
 						<Text style={styles.dropdownLabel}>Enable Background Task</Text>
@@ -499,26 +364,26 @@ export default function App() {
 							style={{ flex: 1, marginTop: 100, width: 375, height: 750, maxHeight: 500 }}
 							onLoadEnd={() => {
 								setTimeout(() => {
-									if (progress == "1") {
-										setStatus("Logged in!");
-										addLog("Logged in!");
-										openPage();
-									} else if (progress == "2") {
-										setStatus("Pressed on the grade page.");
-										addLog("Pressed on the grade page.");
-										getGrades();
-									}
-								}, 1000);
+									functionRunning && webviewFunction(false);
+								}, 2000);
 							}}
 							onMessage={(event) => {
 								const fetchedData = event.nativeEvent.data;
-								console.log("fetchedData :>> ", fetchedData);
-								if (fetchedData != "1" && fetchedData != "2") {
-									addLog("Fetched Data from WebView, the function has finished running.");
+								addLog("fetchedData :>> ", fetchedData);
+
+								if (fetchedData == "1") {
+									addLog("Giriş yapılıyor...");
+                                    setStatus("Giriş yapılıyor...")
+                                } else if (fetchedData == "2") {
+									addLog("Not görüntüleme açılıyor...")
+                                    setStatus("Not görüntüleme açılıyor...")
+								} else if (fetchedData == "3") {
+									addLog("OBYS numarası değiştiriliyor...")
+                                    setStatus("OBYS numarası değiştiriliyor...")
+								} else {
 									handleSaveData(fetchedData);
 									setIsWebViewVisible(false);
-								} else {
-									setProgress(fetchedData);
+                                    setFunctionRunning(false);
 								}
 							}}
 						/>
