@@ -215,7 +215,7 @@ export default function App() {
 
                 data = data.map(row => row.join(",")).join("\\n");
                 window.ReactNativeWebView.postMessage(data);
-            } else if (document.title == "Server Not Found") { // TODO olmazsa obys1, obys2, obys3 denencek. Çalışıp çalışmadıkları variablelar ile kaydedilcek.
+            } else if (document.title == "Server Not Found || document.title.includes("obys")) { // TODO olmazsa obys1, obys2, obys3 denencek. Çalışıp çalışmadıkları variablelar ile kaydedilcek.
                 const currentUrl = window.location.href;
                 
                 if (currentUrl.includes("obys1.ege.edu.tr")) { // TODO: Connect obys variable here
