@@ -14,7 +14,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function App() {
 	const [data, setData] = useState("");
-	const [obys, tryObys] = useState(0);
+	const [obys, tryObys] = useState(1);
 	const [functionRunning, setFunctionRunning] = useState(false);
 	const [status, setStatus] = useState("Not Logged In");
 	const [dayCooldown, setDayCooldown] = useState("15 minutes");
@@ -215,14 +215,16 @@ export default function App() {
 
                 data = data.map(row => row.join(",")).join("\\n");
                 window.ReactNativeWebView.postMessage(data);
-            } else if (document.title == "Server Not Found || document.title.includes("obys")) { // TODO olmazsa obys1, obys2, obys3 denencek. Çalışıp çalışmadıkları variablelar ile kaydedilcek.
+            } else if (document.title == "Server Not Found || document.title.includes("obys")) {
                 const currentUrl = window.location.href;
                 
-                if (currentUrl.includes("obys1.ege.edu.tr")) { // TODO: Connect obys variable here
-                    const newUrl = currentUrl.replace("obys1.ege.edu.tr", "obys2.ege.edu.tr");
+                if (currentUrl.includes("obys${obys}.ege.edu.tr")) {
+                    if (${obys > 9}) {
+                        window.ReactNativeWebView.postMessage("4");
+                        return;
+                    }
+                    const newUrl = currentUrl.replace("obys${obys}.ege.edu.tr", "obys${obys + 1}.ege.edu.tr");
                     window.location.href = newUrl;
-                } else {
-                    
                 }
                 window.ReactNativeWebView.postMessage("3");
             }
@@ -380,6 +382,9 @@ export default function App() {
 								} else if (fetchedData == "3") {
 									addLog("OBYS numarası değiştiriliyor...")
                                     setStatus("OBYS numarası değiştiriliyor...")
+                                } else if (fetchedData == "4") {
+                                    addLog("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...")
+                                    setStatus("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...")
 								} else {
 									handleSaveData(fetchedData);
 									setIsWebViewVisible(false);
