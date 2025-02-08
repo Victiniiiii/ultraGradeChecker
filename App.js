@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { SafeAreaView, Button, Text, View, StyleSheet, Dimensions, FlatList, Switch, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
+import { SafeAreaView, Button, Text, View, StyleSheet, Alert, Dimensions, FlatList, Switch, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { WebView } from "react-native-webview";
 import { Picker } from "@react-native-picker/picker";
+import Clipboard from "@react-native-clipboard/clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as TaskManager from "expo-task-manager";
 import * as BackgroundFetch from "expo-background-fetch";
@@ -22,8 +23,8 @@ export default function App() {
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [isWebViewVisible, setIsWebViewVisible] = useState(false);
-	const webviewRef = useRef(null);
-	const [logs, setLogs] = useState([]);
+    const [logs, setLogs] = useState([]);
+	const webviewRef = useRef(null);	
 	const LAST_DATA_KEY = "@lastData";
 
 	const addLog = async (message) => {
@@ -61,6 +62,16 @@ export default function App() {
 			trigger: null,
 		});
 	};
+
+	useEffect(() => {
+		const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+			const message = response.notification.request.content.body;
+			Clipboard.setString(message);
+			Alert.alert("Copied!", "Notification text copied to clipboard.");
+		});
+
+		return () => subscription.remove();
+	}, []);
 
 	const handleSaveData = async (newData) => {
 		if (newData.length < 5) {
@@ -159,8 +170,8 @@ export default function App() {
 	};
 
 	function webviewFunction(first) {
-        first && setFunctionRunning(true);
-        
+		first && setFunctionRunning(true);
+
 		if ((username == "") | (password == "")) {
 			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
 			setIsWebViewVisible(false);
@@ -375,20 +386,20 @@ export default function App() {
 
 								if (fetchedData == "1") {
 									addLog("Giriş yapılıyor...");
-                                    setStatus("Giriş yapılıyor...")
-                                } else if (fetchedData == "2") {
-									addLog("Not görüntüleme açılıyor...")
-                                    setStatus("Not görüntüleme açılıyor...")
+									setStatus("Giriş yapılıyor...");
+								} else if (fetchedData == "2") {
+									addLog("Not görüntüleme açılıyor...");
+									setStatus("Not görüntüleme açılıyor...");
 								} else if (fetchedData == "3") {
-									addLog("OBYS numarası değiştiriliyor...")
-                                    setStatus("OBYS numarası değiştiriliyor...")
-                                } else if (fetchedData == "4") {
-                                    addLog("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...")
-                                    setStatus("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...")
+									addLog("OBYS numarası değiştiriliyor...");
+									setStatus("OBYS numarası değiştiriliyor...");
+								} else if (fetchedData == "4") {
+									addLog("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...");
+									setStatus("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...");
 								} else {
 									handleSaveData(fetchedData);
 									setIsWebViewVisible(false);
-                                    setFunctionRunning(false);
+									setFunctionRunning(false);
 								}
 							}}
 						/>
