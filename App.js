@@ -252,7 +252,7 @@ export default function App() {
 	};
 
 	const webviewFunction = async () => {
-		if (title.length < 5) {
+		if (title.length < 5 || title == "kimlik.ege.edu.tr/Identity/Account/Login?ReturnUrl=%2F") {
 			firstLogin();
 			addLog("Giriş yapılıyor...");
 			setStatus("Giriş yapılıyor...");
@@ -260,8 +260,6 @@ export default function App() {
 			clickOnNotGoruntuleme();
 			addLog("Not görüntüleme açılıyor...");
 			setStatus("Not görüntüleme açılıyor...");
-		} else if (title == "Not Görüntüleme") {
-			importGrades();
 		} else if (title.includes(`obys${obys}.ege.edu.tr`)) {
 			importGrades();
 			changeObys();
