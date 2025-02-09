@@ -15,6 +15,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function App() {
 	const [data, setData] = useState("");
+	const [title, setTitle] = useState("");
 	const [obys, tryObys] = useState(1);
 	const [functionRunning, setFunctionRunning] = useState(false);
 	const [status, setStatus] = useState("Not Logged In");
@@ -167,7 +168,14 @@ export default function App() {
 		await AsyncStorage.setItem("password", password);
 	};
 
-	const webviewFunction = async () => {
+	const onNavigationStateChange = (navState) => {
+		if (navState.title) {
+			setTitle(navState.title);
+			addLog(`New page title: ${title}`);
+		}
+	};
+
+	const firstLogin = () => {
 		if (!username || !password) {
 			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
 			addLog("Öğrenci no veya şifre girilmedi.");
@@ -176,66 +184,90 @@ export default function App() {
 		}
 
 		webviewRef.current.injectJavaScript(`
-            window.ReactNativeWebView.postMessage(document.title + "blablabla");
-            /* if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi") {
-                document.getElementById("username").value = "${username}";
-                document.getElementById("password").value = "${password}";        
-                checkAccountType(document.getElementById("username"));
-                setTimeout(() => {
-                    document.getElementById("login-submit").click();
-                }, 500);
-                window.ReactNativeWebView.postMessage("1");
-            } else if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" && document.body.innerText.includes("Not Görüntüleme")) {
-                const link = document.querySelector('a[href="/Redirect/Redirect?AppEncId=z3Td%2Fth1x8vcvHw%2BDyN0G7GVy9eklCUQxjzDjMFwZaI%3D"]');
-                link.target = "_self";
-                link.click();
-                window.ReactNativeWebView.postMessage("2");
-            } else if (document.title == "Not Görüntüleme") {
-                let semesterIndex = 0;
-                let data = [];
+            document.getElementById("username").value = "${username}";
+            document.getElementById("password").value = "${password}";        
+            checkAccountType(document.getElementById("username"));
+            setTimeout(() => {
+                document.getElementById("login-submit").click();
+            }, 500);
+        `);
+	};
+
+	const clickOnNotGoruntuleme = () => {
+		webviewRef.current.injectJavaScript(`
+            const link = document.querySelector('a[href="/Redirect/Redirect?AppEncId=z3Td%2Fth1x8vcvHw%2BDyN0G7GVy9eklCUQxjzDjMFwZaI%3D"]');
+            link.target = "_self";
+            link.click();
+        `);
+	};
+
+	const importGrades = () => {
+		webviewRef.current.injectJavaScript(`
+            let semesterIndex = 0;
+            let data = [];
+            while (true) {
+                const semesterSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl00_tdDersAdi";
+                if (document.querySelector(semesterSelector) === null) {
+                    break;
+                }
+                let courseIndex = 0;
                 while (true) {
-                    const semesterSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl00_tdDersAdi";
-                    if (document.querySelector(semesterSelector) === null) {
+                    const courseSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDersAdi";
+                    if (document.querySelector(courseSelector) === null) {
                         break;
                     }
-                    let courseIndex = 0;
-                    while (true) {
-                        const courseSelector = "#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDersAdi";
-                        if (document.querySelector(courseSelector) === null) {
-                            break;
-                        }
-                        const row = [];
-                        row.push(document.querySelector(courseSelector).innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDevamDurumu").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdYid").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_divFinalNotu").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdBn").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdBut").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdHbn").innerText.trim());
-                        row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdSinifOrtalamasi").innerText.trim());
-    
-                        data.push(row);
-                        courseIndex++;
-                    }
-                    semesterIndex++;
+                    const row = [];
+                    row.push(document.querySelector(courseSelector).innerText.trim());
+                    row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdDevamDurumu").innerText.trim());
+                    row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdYid").innerText.trim());
+                    row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_divFinalNotu").innerText.trim());
+                    row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdBn").innerText.trim());
+                    row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdBut").innerText.trim());
+                    row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdHbn").innerText.trim());
+                    row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdSinifOrtalamasi").innerText.trim());
+
+                    data.push(row);
+                    courseIndex++;
                 }
-    
-                data = data.map(row => row.join(",")).join("\\n");
-                window.ReactNativeWebView.postMessage(data);
-            } else if (document.title == "Server Not Found" || document.title.includes("obys")) {
-                const currentUrl = window.location.href;
-                
-                if (currentUrl.includes("obys${obys}.ege.edu.tr")) {
-                    if (${obys > 9}) {
-                        window.ReactNativeWebView.postMessage("4");
-                        return;
-                    }
-                    const newUrl = currentUrl.replace("obys${obys}.ege.edu.tr", "obys${obys + 1}.ege.edu.tr");
-                    window.location.href = newUrl;
-                }
-                window.ReactNativeWebView.postMessage("3");
-            } */
+                semesterIndex++;
+            }
+
+            data = data.map(row => row.join(",")).join("\\n");
+            window.ReactNativeWebView.postMessage(data);
         `);
+	};
+
+	const changeObys = () => {
+		webviewRef.current.injectJavaScript(`
+            const currentUrl = window.location.href;
+                    
+            if (${obys > 9}) {
+                window.ReactNativeWebView.postMessage(false);
+                return;
+            }
+            const newUrl = currentUrl.replace("obys${obys}.ege.edu.tr", "obys${obys + 1}.ege.edu.tr");
+            window.location.href = newUrl;
+            
+        `);
+	};
+
+	const webviewFunction = async () => {
+		if (title.length < 5) {
+			firstLogin();
+			addLog("Giriş yapılıyor...");
+			setStatus("Giriş yapılıyor...");
+		} else if (title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" || title == "kimlik.ege.edu.tr") {
+			clickOnNotGoruntuleme();
+			addLog("Not görüntüleme açılıyor...");
+			setStatus("Not görüntüleme açılıyor...");
+		} else if (title == "Not Görüntüleme") {
+			importGrades();
+		} else if (title.includes(`obys${obys}.ege.edu.tr`)) {
+			importGrades();
+			changeObys();
+			addLog("OBYS numarası değiştiriliyor...");
+			setStatus("OBYS numarası değiştiriliyor...");
+		}
 
 		setTimeout(() => {
 			functionRunning && webviewFunction();
@@ -355,30 +387,22 @@ export default function App() {
 							javaScriptEnabled={true}
 							userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 							startInLoadingState={true}
+							onNavigationStateChange={onNavigationStateChange}
 							onLoadEnd={() => {
 								webviewFunction();
 							}}
 							style={{ flex: 1, marginTop: 100, width: 375, height: 750, maxHeight: 500 }}
 							onMessage={(event) => {
 								const fetchedData = event.nativeEvent.data;
-								addLog("fetchedData is: ", event.nativeEvent.data);
 
-								if (fetchedData == "1") {
-									addLog("Giriş yapılıyor...");
-									setStatus("Giriş yapılıyor...");
-								} else if (fetchedData == "2") {
-									addLog("Not görüntüleme açılıyor...");
-									setStatus("Not görüntüleme açılıyor...");
-								} else if (fetchedData == "3") {
-									addLog("OBYS numarası değiştiriliyor...");
-									setStatus("OBYS numarası değiştiriliyor...");
-								} else if (fetchedData == "4") {
+								if (fetchedData == false) {
 									addLog("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...");
 									setStatus("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...");
 								} else {
 									handleSaveData(fetchedData);
 									setIsWebViewVisible(false);
 									setFunctionRunning(false);
+                                    setStatus("Başarıyla tamamlandı!")
 								}
 							}}
 						/>
