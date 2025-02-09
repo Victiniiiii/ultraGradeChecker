@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { SafeAreaView, Button, Text, View, StyleSheet, Alert, Dimensions, FlatList, Switch, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { WebView } from "react-native-webview";
 import { Picker } from "@react-native-picker/picker";
-import Clipboard from "@react-native-clipboard/clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Clipboard from "expo-clipboard";
 import * as TaskManager from "expo-task-manager";
 import * as BackgroundFetch from "expo-background-fetch";
 import * as MediaLibrary from "expo-media-library";
@@ -18,13 +18,11 @@ export default function App() {
 	const [obys, tryObys] = useState(1);
 	const [functionRunning, setFunctionRunning] = useState(false);
 	const [status, setStatus] = useState("Not Logged In");
-	const [dayCooldown, setDayCooldown] = useState("15 minutes");
-	const [nightCooldown, setNightCooldown] = useState("1 hour");
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [isWebViewVisible, setIsWebViewVisible] = useState(false);
-    const [logs, setLogs] = useState([]);
-	const webviewRef = useRef(null);	
+	const [logs, setLogs] = useState([]);
+	const webviewRef = useRef(null);
 	const LAST_DATA_KEY = "@lastData";
 
 	const addLog = async (message) => {
@@ -66,7 +64,7 @@ export default function App() {
 	useEffect(() => {
 		const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
 			const message = response.notification.request.content.body;
-			Clipboard.setString(message);
+			Clipboard.setStringAsync(message);
 			Alert.alert("Copied!", "Notification text copied to clipboard.");
 		});
 
@@ -169,19 +167,17 @@ export default function App() {
 		await AsyncStorage.setItem("password", password);
 	};
 
-	function webviewFunction(first) {
-		first && setFunctionRunning(true);
-
-		if ((username == "") | (password == "")) {
+	const webviewFunction = async () => {
+		if (!username || !password) {
 			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
+			addLog("Öğrenci no veya şifre girilmedi.");
 			setIsWebViewVisible(false);
 			return;
-		} else if (!isWebViewVisible) {
-			setIsWebViewVisible(true);
 		}
 
 		webviewRef.current.injectJavaScript(`
-            if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi") {
+            window.ReactNativeWebView.postMessage(document.title + "blablabla");
+            /* if (document.title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi") {
                 document.getElementById("username").value = "${username}";
                 document.getElementById("password").value = "${password}";        
                 checkAccountType(document.getElementById("username"));
@@ -217,16 +213,16 @@ export default function App() {
                         row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdBut").innerText.trim());
                         row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdHbn").innerText.trim());
                         row.push(document.querySelector("#rptGrup_ctl" + String(semesterIndex).padStart(2, '0') + "_rptDers_ctl" + String(courseIndex).padStart(2, '0') + "_tdSinifOrtalamasi").innerText.trim());
-
+    
                         data.push(row);
                         courseIndex++;
                     }
                     semesterIndex++;
                 }
-
+    
                 data = data.map(row => row.join(",")).join("\\n");
                 window.ReactNativeWebView.postMessage(data);
-            } else if (document.title == "Server Not Found || document.title.includes("obys")) {
+            } else if (document.title == "Server Not Found" || document.title.includes("obys")) {
                 const currentUrl = window.location.href;
                 
                 if (currentUrl.includes("obys${obys}.ege.edu.tr")) {
@@ -238,9 +234,13 @@ export default function App() {
                     window.location.href = newUrl;
                 }
                 window.ReactNativeWebView.postMessage("3");
-            }
+            } */
         `);
-	}
+
+		setTimeout(() => {
+			functionRunning && webviewFunction();
+		}, 2000);
+	};
 
 	useEffect(() => {
 		const initializeApp = async () => {
@@ -250,14 +250,11 @@ export default function App() {
 
 				const savedUsername = await AsyncStorage.getItem("username");
 				const savedPassword = await AsyncStorage.getItem("password");
-				const savedState = await AsyncStorage.getItem("isBackgroundTaskEnabled");
 				const savedData = await AsyncStorage.getItem(LAST_DATA_KEY);
 				const fileUri = `${FileSystem.documentDirectory}logs.txt`;
 
 				savedUsername ? setUsername(savedUsername) : addLog("No username found.");
 				savedPassword ? setPassword(savedPassword) : addLog("No password found.");
-				savedState !== null ? setIsBackgroundTaskEnabled(JSON.parse(savedState)) : addLog("No data about saved background task.");
-				isBackgroundTaskEnabled ? registerBackgroundTask() : addLog("Background task registered.");
 				savedData ? (addLog("Loaded saved data."), setData(savedData)) : addLog("No saved data found.");
 
 				try {
@@ -275,7 +272,7 @@ export default function App() {
 		};
 
 		initializeApp();
-	}, [dayCooldown, nightCooldown]);
+	}, []);
 
 	const renderPage = ({ item }) => {
 		return <View style={[styles.page, { backgroundColor: item.backgroundColor }]}>{item.content}</View>;
@@ -289,26 +286,6 @@ export default function App() {
 					<TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
 						<View style={styles.settingsContainer}>
 							<Text style={styles.title}>Settings</Text>
-
-							<View style={styles.dropdownWrapper}>
-								<Text style={styles.dropdownLabel}>Day Cooldown</Text>
-								<Picker selectedValue={dayCooldown} onValueChange={(value) => setDayCooldown(value)} style={styles.picker}>
-									<Picker.Item label="5 minutes" value="5 minutes" />
-									<Picker.Item label="10 minutes" value="10 minutes" />
-									<Picker.Item label="15 minutes" value="15 minutes" />
-									<Picker.Item label="30 minutes" value="30 minutes" />
-								</Picker>
-							</View>
-
-							<View style={styles.dropdownWrapper}>
-								<Text style={styles.dropdownLabel}>Night Cooldown</Text>
-								<Picker selectedValue={nightCooldown} onValueChange={(value) => setNightCooldown(value)} style={styles.picker}>
-									<Picker.Item label="15 minutes" value="15 minutes" />
-									<Picker.Item label="30 minutes" value="30 minutes" />
-									<Picker.Item label="1 hour" value="1 hour" />
-									<Picker.Item label="2 hours" value="2 hours" />
-								</Picker>
-							</View>
 
 							<View style={styles.inputWrapper}>
 								<Text style={styles.inputLabel}>Username</Text>
@@ -352,12 +329,16 @@ export default function App() {
 			content: (
 				<View style={styles.mainPage}>
 					<Text style={styles.mainTitle}>gradechecker</Text>
-					<Button title="run the script" onPress={webviewFunction(true)} color="#4CAF50" style={styles.button} />
+					<Button
+						title="run the script"
+						onPress={() => {
+							setIsWebViewVisible(true);
+							setFunctionRunning(true);
+						}}
+						color="#4CAF50"
+						style={styles.button}
+					/>
 					<Text style={styles.status}>Status: {status}</Text>
-					<View style={styles.dropdownWrapper2}>
-						<Text style={styles.dropdownLabel}>Enable Background Task</Text>
-						<Switch value={isBackgroundTaskEnabled} onValueChange={handleToggle} />
-					</View>
 				</View>
 			),
 		},
@@ -374,15 +355,13 @@ export default function App() {
 							javaScriptEnabled={true}
 							userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 							startInLoadingState={true}
-							style={{ flex: 1, marginTop: 100, width: 375, height: 750, maxHeight: 500 }}
 							onLoadEnd={() => {
-								setTimeout(() => {
-									functionRunning && webviewFunction(false);
-								}, 2000);
+								webviewFunction();
 							}}
+							style={{ flex: 1, marginTop: 100, width: 375, height: 750, maxHeight: 500 }}
 							onMessage={(event) => {
 								const fetchedData = event.nativeEvent.data;
-								addLog("fetchedData :>> ", fetchedData);
+								addLog("fetchedData is: ", event.nativeEvent.data);
 
 								if (fetchedData == "1") {
 									addLog("Giriş yapılıyor...");
