@@ -256,15 +256,18 @@ export default function App() {
 			firstLogin();
 			addLog("Giriş yapılıyor...");
 			setStatus("Giriş yapılıyor...");
+            addLog("Title:", title);
 		} else if (title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" || title == "kimlik.ege.edu.tr") {
 			clickOnNotGoruntuleme();
 			addLog("Not görüntüleme açılıyor...");
 			setStatus("Not görüntüleme açılıyor...");
+            addLog("Title:", title);
 		} else if (title.includes(`obys${obys}.ege.edu.tr`)) {
 			importGrades();
 			changeObys();
 			addLog("OBYS numarası değiştiriliyor...");
 			setStatus("OBYS numarası değiştiriliyor...");
+            addLog("Title:", title);
 		}
 
 		setTimeout(() => {
