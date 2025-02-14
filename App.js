@@ -169,9 +169,9 @@ export default function App() {
 	};
 
 	const onNavigationStateChange = (navState) => {
-		if (navState.title.length > 5) {
+		if ((navState.title).trim().length > 5) {
 			setTitle(navState.title);
-			addLog(`New page title: ${title}`);
+			addLog(`New page title: ${navState.title}`);
 		}
 	};
 
@@ -257,18 +257,15 @@ export default function App() {
 			firstLogin();
 			addLog("Giriş yapılıyor...");
 			setStatus("Giriş yapılıyor...");
-            addLog("Title:", title);
 		} else if (title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" || title == "kimlik.ege.edu.tr") {
 			clickOnNotGoruntuleme();
 			addLog("Not görüntüleme açılıyor...");
 			setStatus("Not görüntüleme açılıyor...");
-            addLog("Title:", title);
-		} else if (title.includes(`obys${obys}.ege.edu.tr`)) {
+		} else if (title.includes(`obys`)) {
 			importGrades();
 			changeObys();
 			addLog("OBYS numarası değiştiriliyor...");
 			setStatus("OBYS numarası değiştiriliyor...");
-            addLog("Title:", title);
 		}
 
 		setTimeout(() => {
