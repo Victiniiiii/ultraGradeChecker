@@ -169,7 +169,7 @@ export default function App() {
 	};
 
 	const onNavigationStateChange = (navState) => {
-		if (navState.title) {
+		if (navState.title.length > 5) {
 			setTitle(navState.title);
 			addLog(`New page title: ${title}`);
 		}
@@ -180,6 +180,7 @@ export default function App() {
 			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
 			addLog("Öğrenci no veya şifre girilmedi.");
 			setIsWebViewVisible(false);
+            setFunctionRunning(false);
 			return;
 		}
 
