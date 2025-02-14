@@ -177,10 +177,11 @@ export default function App() {
 
 	const firstLogin = () => {
 		if (!username || !password) {
-			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
-			addLog("Öğrenci no veya şifre girilmedi.");
-			setIsWebViewVisible(false);
+            setIsWebViewVisible(false);
             setFunctionRunning(false);
+            setStatus("Öğrenci no veya şifre girilmedi.")
+			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
+			addLog("Öğrenci no veya şifre girilmedi.");			
 			return;
 		}
 
