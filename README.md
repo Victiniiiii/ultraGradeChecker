@@ -1,6 +1,6 @@
 <h1>GradeChecker</h1>
 
-How does it work?
+<h2>How does it work?</h2>
 
 Firstly you need to download the APK from the releases part. You can clone the repository and use expo build to use it for Apple devices.
 
