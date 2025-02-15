@@ -16,7 +16,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 export default function App() {
 	const [data, setData] = useState("");
 	const [title, setTitle] = useState("");
-	const [obys, tryObys] = useState(1);
+	const [obys, tryObys] = useState(0);
 	const [functionRunning, setFunctionRunning] = useState(false);
 	const [status, setStatus] = useState("Not Logged In");
 	const [username, setUsername] = useState("");
@@ -169,7 +169,7 @@ export default function App() {
 	};
 
 	const onNavigationStateChange = (navState) => {
-		if ((navState.title).trim().length > 5) {
+		if (navState.title.trim().length > 5) {
 			setTitle(navState.title);
 			addLog(`New page title: ${navState.title}`);
 		}
@@ -233,27 +233,29 @@ export default function App() {
 	const changeObys = () => {
 		webviewRef.current.injectJavaScript(`
             const currentUrl = window.location.href;
-                    
             if (${obys > 9}) {
                 window.ReactNativeWebView.postMessage(false);
                 return;
+            } else if (${obys == 1}) {
+                const newUrl = currentUrl.replace(/obys\d\.ege\.edu\.tr/, "obys1.ege.edu.tr");
+            } else {
+                const newUrl = currentUrl.replace("obys${obys - 1}.ege.edu.tr", "obys${obys}.ege.edu.tr");
             }
-            const newUrl = currentUrl.replace("obys${obys}.ege.edu.tr", "obys${obys + 1}.ege.edu.tr");
-            window.location.href = newUrl;
             
+            window.location.href = newUrl;            
         `);
 	};
 
 	const webviewFunction = async () => {
-        if (!username || !password) {
-            setIsWebViewVisible(false);
-            setFunctionRunning(false);
-            setStatus("Öğrenci no veya şifre girilmedi.")
+		if (!username || !password) {
+			setIsWebViewVisible(false);
+			setFunctionRunning(false);
+			setStatus("Öğrenci no veya şifre girilmedi.");
 			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
-			addLog("Öğrenci no veya şifre girilmedi.");			
+			addLog("Öğrenci no veya şifre girilmedi.");
 			return;
 		}
-        
+
 		if (title.length < 5 || title == "kimlik.ege.edu.tr/Identity/Account/Login?ReturnUrl=%2F") {
 			firstLogin();
 			addLog("Giriş yapılıyor...");
@@ -264,6 +266,7 @@ export default function App() {
 			setStatus("Not görüntüleme açılıyor...");
 		} else if (title.includes(`obys`)) {
 			importGrades();
+            tryObys(obys + 1);
 			changeObys();
 			addLog("OBYS numarası değiştiriliyor...");
 			setStatus("OBYS numarası değiştiriliyor...");
@@ -321,12 +324,12 @@ export default function App() {
 
 							<View style={styles.inputWrapper}>
 								<Text style={styles.inputLabel}>Username</Text>
-								<TextInput style={styles.input} value={username} onChangeText={(text) => setUsername(text)} onBlur={saveCredentials} placeholder="Enter username" />
+								<TextInput style={styles.input} value={username} onChangeText={(text) => setUsername(text)} onBlur={saveCredentials} placeholder="Enter username" placeholderTextColor="#888" />
 							</View>
 
 							<View style={styles.inputWrapper}>
 								<Text style={styles.inputLabel}>Password</Text>
-								<TextInput style={styles.input} value={password} onChangeText={(text) => setPassword(text)} onBlur={saveCredentials} placeholder="Enter password" secureTextEntry />
+								<TextInput style={styles.input} value={password} onChangeText={(text) => setPassword(text)} onBlur={saveCredentials} placeholder="Enter password" placeholderTextColor="#888" secureTextEntry />
 							</View>
 						</View>
 					</TouchableWithoutFeedback>
@@ -391,7 +394,7 @@ export default function App() {
 							onLoadEnd={() => {
 								webviewFunction();
 							}}
-							style={{ flex: 1, marginTop: 100, width: 375, height: 750, maxHeight: 500 }}
+							style={{ flex: 1, marginTop: 100, width: SCREEN_WIDTH*0.95, height: 750, maxHeight: 635 }}
 							onMessage={(event) => {
 								const fetchedData = event.nativeEvent.data;
 
@@ -402,7 +405,7 @@ export default function App() {
 									handleSaveData(fetchedData);
 									setIsWebViewVisible(false);
 									setFunctionRunning(false);
-                                    setStatus("Başarıyla tamamlandı!")
+									setStatus("Başarıyla tamamlandı!");
 								}
 							}}
 						/>
@@ -442,7 +445,9 @@ const styles = StyleSheet.create({
 	},
 	debugPage: {
 		flex: 1,
+		justifyContent: "center",
 		alignItems: "center",
+		paddingTop: 120,
 	},
 	page: {
 		width: SCREEN_WIDTH,
@@ -454,22 +459,24 @@ const styles = StyleSheet.create({
 		fontSize: 24,
 		color: "#fff",
 		fontWeight: "bold",
-		marginTop: 100,
-		marginBottom: 50,
+		position: "absolute",
+		top: 150,
+		width: "100%",
+		textAlign: "center",
 	},
 	mainTitle: {
-		fontSize: 30,
-		color: "#fff",
-		fontWeight: "bold",
-		textAlign: "center",
-		marginBottom: 20,
-	},
+        fontSize: 30,
+        color: "#fff",
+        fontWeight: "bold",
+        textAlign: "center",
+        marginBottom: 20,
+    },    
 	mainPage: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		padding: 20,
-	},
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
+    },    
 	button: {
 		backgroundColor: "#4CAF50",
 		color: "#fff",
@@ -485,9 +492,10 @@ const styles = StyleSheet.create({
 	},
 	dataPage: {
 		flex: 1,
-		justifyContent: "flex-start",
+		justifyContent: "center",
 		alignItems: "center",
-		paddingTop: 20,
+		paddingTop: 220,
+        paddingBottom: 20,
 	},
 	textPlace: {
 		color: "white",
@@ -505,6 +513,8 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
+		paddingTop: 120,
+		width: "90%",
 	},
 	dropdownWrapper: {
 		marginVertical: 10,
@@ -530,7 +540,8 @@ const styles = StyleSheet.create({
 	inputWrapper: {
 		marginBottom: 20,
 		marginVertical: 10,
-		width: "80%",
+		width: 250,
+        color: "white"
 	},
 	inputLabel: {
 		color: "#fff",
@@ -547,9 +558,11 @@ const styles = StyleSheet.create({
 	},
 	logsPage: {
 		flex: 1,
-		padding: 16,
+		paddingTop: 220,
+		paddingHorizontal: 16,
 		backgroundColor: "#222",
 		alignItems: "center",
+		justifyContent: "center",
 	},
 	logContainer: {
 		flex: 1,
