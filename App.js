@@ -176,15 +176,6 @@ export default function App() {
 	};
 
 	const firstLogin = () => {
-		if (!username || !password) {
-            setIsWebViewVisible(false);
-            setFunctionRunning(false);
-            setStatus("Öğrenci no veya şifre girilmedi.")
-			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
-			addLog("Öğrenci no veya şifre girilmedi.");			
-			return;
-		}
-
 		webviewRef.current.injectJavaScript(`
             document.getElementById("username").value = "${username}";
             document.getElementById("password").value = "${password}";        
@@ -254,6 +245,15 @@ export default function App() {
 	};
 
 	const webviewFunction = async () => {
+        if (!username || !password) {
+            setIsWebViewVisible(false);
+            setFunctionRunning(false);
+            setStatus("Öğrenci no veya şifre girilmedi.")
+			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
+			addLog("Öğrenci no veya şifre girilmedi.");			
+			return;
+		}
+        
 		if (title.length < 5 || title == "kimlik.ege.edu.tr/Identity/Account/Login?ReturnUrl=%2F") {
 			firstLogin();
 			addLog("Giriş yapılıyor...");
