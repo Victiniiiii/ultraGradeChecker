@@ -1,4 +1,4 @@
-##GradeChecker
+<h1>GradeChecker</h1>
 
 How does it work?
 
