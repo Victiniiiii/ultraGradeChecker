@@ -167,9 +167,23 @@ export default function App() {
 	};
 
 	const onNavigationStateChange = navState => {
-		if (navState.title.trim().length > 5) {
-			setTitle(navState.title);
-			addLog(`New page title: ${navState.title}`);
+		if (navState.body.textContent.includes("İlkeleri")) {
+			setTitle("Giriş Sayfası");
+			addLog(`Yeni Sayfa: Giriş Sayfası.`);
+		} else if (navState.body.textContent.includes("Not Görüntüleme")) {
+			setTitle("Ana Sayfa");
+			addLog(`Yeni Sayfa: Ana Sayfa.`);
+		} else if (navState.body.textContent.includes("Alınan son dersi göster")) {
+			setTitle("Not Görüntüleme");
+			addLog(`Yeni Sayfa: Not Görüntüleme.`);
+		} else {
+			if (navState.title.textContent.includes("obys")) {
+				setTitle("Obys Değiştir");
+				addLog("Obys Değiştiriliyor...");
+			} else {
+				setTitle("Hata");
+				addLog(`Sayfa bulunamadı.`);
+			}
 		}
 	};
 
@@ -254,15 +268,15 @@ export default function App() {
 			return;
 		}
 
-		if (title.length < 5 || title == "kimlik.ege.edu.tr/Identity/Account/Login?ReturnUrl=%2F") {
+		if (title == "Giriş Sayfası") {
 			firstLogin();
 			addLog("Giriş yapılıyor...");
 			setStatus("Giriş yapılıyor...");
-		} else if (title == "Tek şifre ile giriş(SSO) - Ege Üniversitesi" || title == "kimlik.ege.edu.tr") {
+		} else if (title == "Ana Sayfa") {
 			clickOnNotGoruntuleme();
 			addLog("Not görüntüleme açılıyor...");
 			setStatus("Not görüntüleme açılıyor...");
-		} else if (title.includes(`obys`)) {
+		} else if (title == `Obys Değiştir`) {
 			importGrades();
 			tryObys(obys + 1);
 			changeObys();
