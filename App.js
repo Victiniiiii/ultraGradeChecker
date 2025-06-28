@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { SafeAreaView, Button, Text, View, StyleSheet, Alert, Dimensions, FlatList, Switch, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
+import { SafeAreaView, Button, Text, View, StyleSheet, Alert, Dimensions, FlatList, ScrollView, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { WebView } from "react-native-webview";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
 import * as MediaLibrary from "expo-media-library";
 import * as FileSystem from "expo-file-system";
 import * as Notifications from "expo-notifications";
+import * as SecureStore from "expo-secure-store";
 import moment from "moment-timezone";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -23,7 +24,7 @@ export default function App() {
 	const webviewRef = useRef(null);
 	const LAST_DATA_KEY = "@lastData";
 
-	const addLog = async (message) => {
+	const addLog = async message => {
 		const timestamp = moment().tz("Europe/Istanbul").format("DD-MM-YYYY HH:mm:ss");
 		const newLog = `${timestamp} - ${message}`;
 		const fileUri = `${FileSystem.documentDirectory}logs.txt`;
@@ -38,7 +39,7 @@ export default function App() {
 			await FileSystem.writeAsStringAsync(fileUri, newLog + "\n");
 		}
 
-		setLogs((prevLogs) => [...prevLogs, newLog]);
+		setLogs(prevLogs => [...prevLogs, newLog]);
 	};
 
 	Notifications.setNotificationHandler({
@@ -49,7 +50,7 @@ export default function App() {
 		}),
 	});
 
-	const sendNotification = async (message) => {
+	const sendNotification = async message => {
 		await Notifications.scheduleNotificationAsync({
 			content: {
 				title: "gradechecker",
@@ -60,7 +61,7 @@ export default function App() {
 	};
 
 	useEffect(() => {
-		const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+		const subscription = Notifications.addNotificationResponseReceivedListener(response => {
 			const message = response.notification.request.content.body;
 			Clipboard.setStringAsync(message);
 			Alert.alert("Copied!", "Notification text copied to clipboard.");
@@ -69,7 +70,7 @@ export default function App() {
 		return () => subscription.remove();
 	}, []);
 
-	const handleSaveData = async (newData) => {
+	const handleSaveData = async newData => {
 		if (newData.length < 5) {
 			addLog("Empty newData bug occurred.");
 			await sendNotification("Empty newData bug occurred.");
@@ -90,8 +91,8 @@ export default function App() {
 					}
 					return acc;
 				}, [])
-				.filter((line) => line.trim() !== "" && !line.startsWith("-"))
-				.map((line) => {
+				.filter(line => line.trim() !== "" && !line.startsWith("-"))
+				.map(line => {
 					return line.replace(/,([^,]+)$/, (match, p1) => {
 						return p1.includes(".") ? match : `.${p1}`;
 					});
@@ -132,7 +133,7 @@ export default function App() {
 
 					if (changesDetected) {
 						addLog("Data has changed. Changes are:");
-						differences.forEach((diff) => {
+						differences.forEach(diff => {
 							const columnName = whatwhat[diff.column - 1];
 							addLog(`${diff.changedlesson} ${columnName} yeni değeri: "${diff.newValue}"`);
 							sendNotification(`${diff.changedlesson} ${columnName} yeni değeri: "${diff.newValue}"`);
@@ -161,11 +162,11 @@ export default function App() {
 	};
 
 	const saveCredentials = async () => {
-		await AsyncStorage.setItem("username", username);
-		await AsyncStorage.setItem("password", password);
+		await SecureStore.setItemAsync("username", username);
+		await SecureStore.setItemAsync("password", password);
 	};
 
-	const onNavigationStateChange = (navState) => {
+	const onNavigationStateChange = navState => {
 		if (navState.title.trim().length > 5) {
 			setTitle(navState.title);
 			addLog(`New page title: ${navState.title}`);
@@ -263,7 +264,7 @@ export default function App() {
 			setStatus("Not görüntüleme açılıyor...");
 		} else if (title.includes(`obys`)) {
 			importGrades();
-            tryObys(obys + 1);
+			tryObys(obys + 1);
 			changeObys();
 			addLog("OBYS numarası değiştiriliyor...");
 			setStatus("OBYS numarası değiştiriliyor...");
@@ -280,8 +281,8 @@ export default function App() {
 				await MediaLibrary.requestPermissionsAsync();
 				await Notifications.requestPermissionsAsync();
 
-				const savedUsername = await AsyncStorage.getItem("username");
-				const savedPassword = await AsyncStorage.getItem("password");
+				const savedUsername = await SecureStore.getItemAsync("username");
+				const savedPassword = await SecureStore.getItemAsync("password");
 				const savedData = await AsyncStorage.getItem(LAST_DATA_KEY);
 				const fileUri = `${FileSystem.documentDirectory}logs.txt`;
 
@@ -293,7 +294,7 @@ export default function App() {
 					const fileInfo = await FileSystem.getInfoAsync(fileUri);
 					if (fileInfo.exists) {
 						const fileContent = await FileSystem.readAsStringAsync(fileUri);
-						setLogs(fileContent.split("\n").filter((line) => line.trim() !== ""));
+						setLogs(fileContent.split("\n").filter(line => line.trim() !== ""));
 					}
 				} catch (error) {
 					addLog("Error loading logs:", error);
@@ -321,12 +322,12 @@ export default function App() {
 
 							<View style={styles.inputWrapper}>
 								<Text style={styles.inputLabel}>Username</Text>
-								<TextInput style={styles.input} value={username} onChangeText={(text) => setUsername(text)} onBlur={saveCredentials} placeholder="Enter username" placeholderTextColor="#888" />
+								<TextInput style={styles.input} value={username} onChangeText={text => setUsername(text)} onBlur={saveCredentials} placeholder="Enter username" placeholderTextColor="#888" />
 							</View>
 
 							<View style={styles.inputWrapper}>
 								<Text style={styles.inputLabel}>Password</Text>
-								<TextInput style={styles.input} value={password} onChangeText={(text) => setPassword(text)} onBlur={saveCredentials} placeholder="Enter password" placeholderTextColor="#888" secureTextEntry />
+								<TextInput style={styles.input} value={password} onChangeText={text => setPassword(text)} onBlur={saveCredentials} placeholder="Enter password" placeholderTextColor="#888" secureTextEntry />
 							</View>
 						</View>
 					</TouchableWithoutFeedback>
@@ -391,8 +392,8 @@ export default function App() {
 							onLoadEnd={() => {
 								webviewFunction();
 							}}
-							style={{ flex: 1, marginTop: 100, width: SCREEN_WIDTH*0.95, height: 750, maxHeight: 635 }}
-							onMessage={(event) => {
+							style={{ flex: 1, marginTop: 100, width: SCREEN_WIDTH * 0.95, height: 750, maxHeight: 635 }}
+							onMessage={event => {
 								const fetchedData = event.nativeEvent.data;
 
 								if (fetchedData == false) {
@@ -430,7 +431,7 @@ export default function App() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<FlatList data={pages} horizontal pagingEnabled renderItem={renderPage} keyExtractor={(item) => item.key} showsHorizontalScrollIndicator={false} initialScrollIndex={2} getItemLayout={(data, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index })} />
+			<FlatList data={pages} horizontal pagingEnabled renderItem={renderPage} keyExtractor={item => item.key} showsHorizontalScrollIndicator={false} initialScrollIndex={2} getItemLayout={(data, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index })} />
 		</SafeAreaView>
 	);
 }
@@ -462,18 +463,18 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	mainTitle: {
-        fontSize: 30,
-        color: "#fff",
-        fontWeight: "bold",
-        textAlign: "center",
-        marginBottom: 20,
-    },    
+		fontSize: 30,
+		color: "#fff",
+		fontWeight: "bold",
+		textAlign: "center",
+		marginBottom: 20,
+	},
 	mainPage: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
-    },    
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		padding: 20,
+	},
 	button: {
 		backgroundColor: "#4CAF50",
 		color: "#fff",
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		alignItems: "center",
 		paddingTop: 220,
-        paddingBottom: 20,
+		paddingBottom: 20,
 	},
 	textPlace: {
 		color: "white",
@@ -538,7 +539,7 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 		marginVertical: 10,
 		width: 250,
-        color: "white"
+		color: "white",
 	},
 	inputLabel: {
 		color: "#fff",

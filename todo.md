@@ -1,8 +1,7 @@
 Yemekhane sistemi:
-- Farklı buton olcak
+- Farklı buton olcak yemek için
 - Yemek menüsünü çekecek
 - Bakiye gözükcek
 
 Bug Fixler:
-- Encryption
 - Sayfa başlığı yerine search olcak
