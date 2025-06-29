@@ -37,9 +37,11 @@ const styles = StyleSheet.create({
 	},
 	mainPage: {
 		flex: 1,
-		justifyContent: "center",
+		flexDirection: "column",
+		justifyContent: "flex-start",
 		alignItems: "center",
 		padding: 20,
+		paddingTop: 150,
 	},
 	button: {
 		backgroundColor: "#4CAF50",
@@ -53,6 +55,7 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		marginTop: 20,
 		fontStyle: "italic",
+		marginBottom: 40,
 	},
 	dataPage: {
 		flex: 1,
@@ -106,19 +109,24 @@ const styles = StyleSheet.create({
 		marginVertical: 10,
 		width: 250,
 		color: "white",
+		display: "flex",
+		flexDirection: "row",
+		justifyContent: "space-around",
+		alignItems: "center"
 	},
 	inputLabel: {
 		color: "#fff",
 		marginBottom: 8,
 	},
 	input: {
+		width: 130,
 		height: 40,
-		borderColor: "#ccc",
+		borderColor: "#666",
 		borderWidth: 1,
 		borderRadius: 4,
 		paddingLeft: 10,
 		color: "#fff",
-		backgroundColor: "#333",
+		backgroundColor: "#222",
 	},
 	logsPage: {
 		flex: 1,
@@ -140,6 +148,17 @@ const styles = StyleSheet.create({
 		color: "#ccc",
 		marginBottom: 16,
 		marginTop: -8,
+	},
+	webviewSlot: {
+		width: SCREEN_WIDTH * 0.95,
+		height: 360,
+		maxHeight: 360,
+		marginTop: 20,
+	},
+	webview: {
+		flex: 1,
+		borderRadius: 8,
+		overflow: "hidden",
 	},
 });
 
