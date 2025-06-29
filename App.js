@@ -14,9 +14,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function App() {
 	const [data, setData] = useState("");
-	const [title, setTitle] = useState("");
 	const [obys, tryObys] = useState(0);
-	const [functionRunning, setFunctionRunning] = useState(false);
 	const [status, setStatus] = useState("Not Logged In");
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
@@ -167,27 +165,6 @@ export default function App() {
 		await SecureStore.setItemAsync("password", password);
 	};
 
-	const onNavigationStateChange = navState => {
-		if (navState.body.textContent.includes("İlkeleri")) {
-			setTitle("Giriş Sayfası");
-			addLog(`Yeni Sayfa: Giriş Sayfası.`);
-		} else if (navState.body.textContent.includes("Not Görüntüleme")) {
-			setTitle("Ana Sayfa");
-			addLog(`Yeni Sayfa: Ana Sayfa.`);
-		} else if (navState.body.textContent.includes("Alınan son dersi göster")) {
-			setTitle("Not Görüntüleme");
-			addLog(`Yeni Sayfa: Not Görüntüleme.`);
-		} else {
-			if (navState.title.textContent.includes("obys")) {
-				setTitle("Obys Değiştir");
-				addLog("Obys Değiştiriliyor...");
-			} else {
-				setTitle("Hata");
-				addLog(`Sayfa bulunamadı.`);
-			}
-		}
-	};
-
 	const firstLogin = () => {
 		webviewRef.current.injectJavaScript(`
             document.getElementById("username").value = "${username}";
@@ -259,35 +236,51 @@ export default function App() {
         `);
 	};
 
-	const webviewFunction = async () => {
-		if (!username || !password) {
-			setIsWebViewVisible(false);
-			setFunctionRunning(false);
-			setStatus("Öğrenci no veya şifre girilmedi.");
-			alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
-			addLog("Öğrenci no veya şifre girilmedi.");
-			return;
-		}
+	const pageFromUrl = url => {
+		if (!url) return "unknown";
+		const u = url.toLowerCase();
+		if (u.startsWith("https://kimlik.ege.edu.tr/identity/account/login")) return "login";
+		if (u === "https://kimlik.ege.edu.tr/" || u === "https://kimlik.ege.edu.tr") return "home";
+		if (u.includes("ogrenci")) return "grades";
+		if (u.includes("obys")) return "obys";
+		return "unknown";
+	};
 
-		if (title == "Giriş Sayfası") {
-			firstLogin();
-			addLog("Giriş yapılıyor...");
-			setStatus("Giriş yapılıyor...");
-		} else if (title == "Ana Sayfa") {
-			clickOnNotGoruntuleme();
-			addLog("Not görüntüleme açılıyor...");
-			setStatus("Not görüntüleme açılıyor...");
-		} else if (title == `Obys Değiştir`) {
-			importGrades();
-			tryObys(obys + 1);
-			changeObys();
-			addLog("OBYS numarası değiştiriliyor...");
-			setStatus("OBYS numarası değiştiriliyor...");
-		}
+	const onNavigationStateChange = navState => {
+		const page = pageFromUrl(navState.url);
 
-		setTimeout(() => {
-			functionRunning && webviewFunction();
-		}, 2000);
+		switch (page) {
+			case "login":
+				if (username && password) {
+					firstLogin();
+					setStatus("Giriş yapılıyor...");
+				} else {
+					setIsWebViewVisible(false);
+					setStatus("Öğrenci no veya şifre girilmedi.");
+					alert("Giriş yapmak için ayarlardan öğrenci no ve şifre girmelisin.");
+					addLog("Öğrenci no veya şifre girilmedi.");
+				}
+				break;
+
+			case "home":
+				clickOnNotGoruntuleme();
+				setStatus("Not görüntüleme açılıyor...");
+				break;
+
+			case "grades":
+				importGrades();
+				break;
+
+			case "obys":
+				addLog("Obys Değiştiriliyor...");
+				tryObys(obys + 1);
+				changeObys();
+				setStatus("OBYS numarası değiştiriliyor...");
+				break;
+
+			default:
+				addLog("Sayfa bulunamadı.");
+		}
 	};
 
 	useEffect(() => {
@@ -381,7 +374,6 @@ export default function App() {
 						title="run the script"
 						onPress={() => {
 							setIsWebViewVisible(true);
-							setFunctionRunning(true);
 						}}
 						color="#4CAF50"
 						style={styles.button}
@@ -400,24 +392,19 @@ export default function App() {
 						<WebView
 							ref={webviewRef}
 							source={{ uri: "https://kimlik.ege.edu.tr/Identity/Account/Login?ReturnUrl=%2F" }}
-							javaScriptEnabled={true}
+							javaScriptEnabled
 							userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-							startInLoadingState={true}
+							startInLoadingState
 							onNavigationStateChange={onNavigationStateChange}
-							onLoadEnd={() => {
-								webviewFunction();
-							}}
 							style={{ flex: 1, marginTop: 100, width: SCREEN_WIDTH * 0.95, height: 750, maxHeight: 635 }}
 							onMessage={event => {
 								const fetchedData = event.nativeEvent.data;
-
-								if (fetchedData == false) {
+								if (fetchedData === false) {
 									addLog("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...");
 									setStatus("OBYS numaraları 9'a ulaştı, işlem sonlandırılıyor...");
 								} else {
 									handleSaveData(fetchedData);
 									setIsWebViewVisible(false);
-									setFunctionRunning(false);
 									setStatus("Başarıyla tamamlandı!");
 								}
 							}}

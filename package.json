@@ -10,22 +10,22 @@
 		"web": "expo start --web"
 	},
 	"dependencies": {
-		"@react-native-async-storage/async-storage": "1.23.1",
-		"@react-native-picker/picker": "2.9.0",
-		"expo": "~52.0.11",
-		"expo-background-fetch": "^13.0.3",
-		"expo-clipboard": "^7.0.1",
-		"expo-file-system": "~18.0.4",
-		"expo-media-library": "~17.0.3",
-		"expo-notifications": "~0.29.11",
-		"expo-secure-store": "^14.2.3",
-		"expo-status-bar": "~2.0.0",
-		"expo-task-manager": "^12.0.3",
-		"expo-updates": "^0.26.10",
-		"moment-timezone": "^0.5.46",
-		"react": "18.3.1",
-		"react-native": "0.76.3",
-		"react-native-webview": "13.12.5"
+		"@react-native-async-storage/async-storage": "2.1.2",
+		"@react-native-picker/picker": "2.11.1",
+		"expo": "latest",
+		"expo-background-fetch": "latest",
+		"expo-clipboard": "latest",
+		"expo-file-system": "latest",
+		"expo-media-library": "latest",
+		"expo-notifications": "latest",
+		"expo-secure-store": "latest",
+		"expo-status-bar": "latest",
+		"expo-task-manager": "latest",
+		"expo-updates": "latest",
+		"moment-timezone": "latest",
+		"react": "19.0.0",
+		"react-native": "0.79.4",
+		"react-native-webview": "13.13.5"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.25.2"
